@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zadanie 1</title>
+
+    <link rel="stylesheet" href="css/main.css" type="text/css">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div id="title">Zadanie 1</div>
+    </header>
+    <main>
+        <article>
+            <section>
+                <div id="upload">
+                    <form>
+                        <label>
+                            Załaduj plik:
+                            <input type="file" name="dataFile" onchange="readFile(this)">
+                        </label>
+                    </form>
+                </div>
+            </section>
+            <section>
+                <div id="board">
+
+                </div>
+            </section>
+        </article>
+    </main>
+
+<script>
+
+    function checkFileAPI() {
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            return true;
+        } else {
+            alert('The File APIs are not fully supported by your browser. Fallback required.');
+            return false;
+        }
+    }
+
+    function readFile(filePath) {
+        if(checkFileAPI() === false)
+            return false
+        var reader = new FileReader()
+        var output = ""
+        if(filePath.files && filePath.files[0]) {
+            reader.onload = function (e) {
+                output = e.target.result;
+                displayContents(output);
+            };//end onload()
+            reader.readAsText(filePath.files[0]);
+        }//end if html5 filelist support
+        else if(ActiveXObject && filePath) { //fallback to IE 6-8 support via ActiveX
+            try {
+                reader = new ActiveXObject("Scripting.FileSystemObject");
+                var file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
+                output = file.ReadAll(); //text contents of file
+                file.Close(); //close file "input stream"
+                displayContents(output);
+            } catch (e) {
+                if (e.number == -2146827859) {
+                    alert('Unable to access local files due to browser security settings. ' +
+                        'To overcome this, go to Tools->Internet Options->Security->Custom Level. ' +
+                        'Find the setting for "Initialize and script ActiveX controls not marked as safe" and change it to "Enable" or "Prompt"');
+                }
+            }
+        }
+        else { //this is where you could fallback to Java Applet, Flash or similar
+            return false;
+        }
+        return true;
+    }
+
+    function displayContents(rawFileContent) {
+        var lines = []
+
+        for (i = 0, newLineIndex = 0; i < rawFileContent.length; i++) {
+            if (rawFileContent.charAt(i) === '\n') {
+                lines.push(rawFileContent.substring(newLineIndex, i))
+                newLineIndex = i + 1
+            }
+        }
+
+        var dataRows = []
+
+        var board = document.getElementById('board')
+        board.innerText = rawFileContent
+        console.log(lines)
+    }
+
+</script>
+
+</body>
+</html>
