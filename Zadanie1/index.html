@@ -8,6 +8,8 @@
 
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <header>
@@ -19,9 +21,9 @@
                 <div id="upload">
                     <form>
                         <label>
-                            Załaduj plik:
-                            <input type="file" name="dataFile" onchange="readFile(this)">
+                            <input id="data-file" type="file" name="dataFile">
                         </label>
+                        <input id="upload-data-btn" type="button" value="Załaduj">
                     </form>
                 </div>
             </section>
@@ -30,71 +32,70 @@
 
                 </div>
             </section>
+            <div id="back-btn">
+                <button>Wróć</button>
+            </div>
         </article>
     </main>
 
 <script>
 
-    function checkFileAPI() {
-        if (window.File && window.FileReader && window.FileList && window.Blob) {
-            return true;
-        } else {
-            alert('The File APIs are not fully supported by your browser. Fallback required.');
-            return false;
-        }
+    var Config
+    var AttributesSeparator = " "
+    var RowsSeparator = "\n"
+    var ColTypes = []
+    var NormalizationScopes = []
+
+    function processConfigFile() {
+
     }
 
-    function readFile(filePath) {
-        if(checkFileAPI() === false)
-            return false
-        var reader = new FileReader()
-        var output = ""
-        if(filePath.files && filePath.files[0]) {
-            reader.onload = function (e) {
-                output = e.target.result;
-                displayContents(output);
-            };//end onload()
-            reader.readAsText(filePath.files[0]);
-        }//end if html5 filelist support
-        else if(ActiveXObject && filePath) { //fallback to IE 6-8 support via ActiveX
-            try {
-                reader = new ActiveXObject("Scripting.FileSystemObject");
-                var file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
-                output = file.ReadAll(); //text contents of file
-                file.Close(); //close file "input stream"
-                displayContents(output);
-            } catch (e) {
-                if (e.number == -2146827859) {
-                    alert('Unable to access local files due to browser security settings. ' +
-                        'To overcome this, go to Tools->Internet Options->Security->Custom Level. ' +
-                        'Find the setting for "Initialize and script ActiveX controls not marked as safe" and change it to "Enable" or "Prompt"');
-                }
-            }
-        }
-        else { //this is where you could fallback to Java Applet, Flash or similar
-            return false;
-        }
-        return true;
+    function processDataFileContent(rawFileContent) {
+        var dataSet = createDataSet(rawFileContent)
+
+        displayText(rawFileContent, "board")
+        console.log(dataSet)
     }
 
-    function displayContents(rawFileContent) {
+    function createDataSet(rawData) {
+        var lines = separateLines(rawData)
+        var dataSet = separateAttributes(lines)
+
+        return dataSet
+    }
+    
+    function separateLines(rawData) {
         var lines = []
-
-        for (i = 0, newLineIndex = 0; i < rawFileContent.length; i++) {
-            if (rawFileContent.charAt(i) === '\n') {
-                lines.push(rawFileContent.substring(newLineIndex, i))
+        for (i = 0, newLineIndex = 0; i < rawData.length; i++) {
+            if (rawData.charAt(i) === RowsSeparator) {
+                lines.push(rawData.substring(newLineIndex, i))
                 newLineIndex = i + 1
             }
         }
-
-        var dataRows = []
-
-        var board = document.getElementById('board')
-        board.innerText = rawFileContent
-        console.log(lines)
+        return lines
+    }
+    
+    function separateAttributes(dataLines) {
+        var dataSet = []
+        for (i = 0; i < dataLines.length; i++) {
+            var dataRow = []
+            for (j = 0, k = 0; j < dataLines[i].length; j++) {
+                if (dataLines[i].charAt(j) === AttributesSeparator) {
+                    k++
+                    continue
+                }
+                if (dataRow[k]) {
+                    dataRow[k] += dataLines[i].charAt(j)
+                } else {
+                    dataRow[k] = dataLines[i].charAt(j)
+                }
+            }
+            dataSet.push(dataRow)
+        }
+        return dataSet
     }
 
 </script>
-
+    <script src="additionalScripts.js" type="text/javascript"></script>
 </body>
 </html>

@@ -22,8 +22,8 @@ body
 
 #upload
 {
-    width: 400px;
-    padding: 5px 10px;
+    width: min-content;
+    padding: 10px 10px;
     margin: 10px auto;
     text-align: center;
     background-color: darkred;
@@ -32,9 +32,32 @@ body
 
 #board
 {
-    width: 1000px;
-    height: auto;
-    margin: 20px auto;
+    width: 97vw;
+    height: 93vh;
+    margin: 20px auto 0 auto;
+    padding: 5px;
     background-color: darkred;
     border-radius: 5px;
+    overflow: scroll;
+}
+
+#upload input
+{
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#back-btn
+{
+    margin: 0 auto;
+    text-align: center;
+}
+
+#back-btn button
+{
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 25px;
 }
