@@ -19,11 +19,11 @@
         <article>
             <section>
                 <div id="upload">
-                    <form>
+                    <form id="upload-data-form">
                         <label>
                             <input id="data-file" type="file" name="dataFile">
                         </label>
-                        <input id="upload-data-btn" type="button" value="Załaduj">
+                        <input id="upload-data-btn" type="button" value="Uruchom">
                     </form>
                 </div>
             </section>
@@ -40,47 +40,101 @@
 
 <script>
 
-    var Config
-    var AttributesSeparator = " "
-    var RowsSeparator = "\n"
-    var ColTypes = []
-    var NormalizationScopes = []
+    const Config = {
+        AttributesSeparator: ",",
+        RowsSeparator: "\n",
+        MissingValuesSymbol: "?",
+        NumberOfAttributes: 16,
+        ColumnTypes: [  "symbol", "float", "float", "symbol", "symbol",
+                        "symbol", "symbol", "float", "symbol", "symbol",
+                        "float", "symbol", "symbol", "int", "int",
+                        "decision"],
+        ValuesScopes: [
+            ["b", "a"],
+            [0, 100],
+            [0, 100],
+            ["u", "y", "l", "t"],
+            ["g", "p", "gg"],
 
-    function processConfigFile() {
+            ["c", "d", "cc", "i", "j", "k", "m", "r", "q", "w", "x", "e", "aa", "ff"],
+            ["v", "h", "bb", "j", "n", "z", "dd", "ff", "o"],
+            [0, 100],
+            ["t", "f"],
+            ["t", "f"],
 
+            [0, 100],
+            ["t", "f"],
+            ["g", "p", "s"],
+            [0, 99999],
+            [0, 999999],
+
+            ["+", "-"]
+        ],
+        NormalizationScope: [1, 0],
+        Ready: true
+    }
+
+    function processConfigFile(rawConfig) {
+        //napisać proces przetwarzania pliku konfiguracyjnego przy pomocy surowych danych
     }
 
     function processDataFileContent(rawFileContent) {
-        var dataSet = createDataSet(rawFileContent)
+        try {
+            const dataSet = createDataSet(rawFileContent)
+            checkDataSetIntegrity(dataSet)
 
-        displayText(rawFileContent, "board")
-        console.log(dataSet)
+            displayText(rawFileContent, "board")
+            console.log(dataSet)
+        }
+        catch (e) {
+            alert(`Błąd: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
     }
 
     function createDataSet(rawData) {
-        var lines = separateLines(rawData)
-        var dataSet = separateAttributes(lines)
+        if(rawData.length <= 0)
+            throw new Error("Plik z danymi jest pusty!")
+
+        const lines = separateLines(rawData)
+        const dataSet = separateAttributes(lines)
 
         return dataSet
     }
     
     function separateLines(rawData) {
-        var lines = []
-        for (i = 0, newLineIndex = 0; i < rawData.length; i++) {
-            if (rawData.charAt(i) === RowsSeparator) {
-                lines.push(rawData.substring(newLineIndex, i))
-                newLineIndex = i + 1
+        let lines = []
+        if(Config.RowsSeparator === '\n' || Config.RowsSeparator === '\r') {
+            for (let i = 0, startNewLineIndex = 0; i < rawData.length; i++) {
+                if (rawData.charAt(i) === '\n' || rawData.charAt(i) === '\r') {
+                    lines.push(rawData.substring(startNewLineIndex, i))
+                    if (rawData.charAt(i+1) === '\n' || rawData.charAt(i+1) === '\r')
+                        i++
+                    startNewLineIndex = i + 1
+                }
             }
         }
+        else {
+            for (let i = 0, startNewLineIndex = 0; i < rawData.length; i++) {
+                if (rawData.charAt(i) === Config.RowsSeparator) {
+                    lines.push(rawData.substring(startNewLineIndex, i))
+                    startNewLineIndex = i + 1
+                }
+            }
+        }
+
+        if(lines.length <= 0)
+            throw new Error("Nie udało się wydzielić ani jednego rekordu! Pamiętaj, że rekordy muszą być zakończone separatorem rekordów zdefiniowanym w pliku konfiguracyjnym.")
+
         return lines
     }
     
     function separateAttributes(dataLines) {
-        var dataSet = []
-        for (i = 0; i < dataLines.length; i++) {
-            var dataRow = []
-            for (j = 0, k = 0; j < dataLines[i].length; j++) {
-                if (dataLines[i].charAt(j) === AttributesSeparator) {
+        let dataSet = []
+        for (let i = 0; i < dataLines.length; i++) {
+            let dataRow = []
+            for (let j = 0, k = 0; j < dataLines[i].length; j++) {
+                if (dataLines[i].charAt(j) === Config.AttributesSeparator) {
                     k++
                     continue
                 }
@@ -90,9 +144,85 @@
                     dataRow[k] = dataLines[i].charAt(j)
                 }
             }
-            dataSet.push(dataRow)
+            if(dataRow.length > 0)
+                dataSet.push(dataRow)
         }
+        if(dataSet.length <= 0)
+            throw new Error("Nie udało się wydzielić ani jednego rekordu! Pamiętaj, że separator atrybutów jest symbolem pomijanym w trakcie odczytywania danych, możesz go zdefiniować w pliku konfiguracyjnym.")
+
         return dataSet
+    }
+    
+    function checkDataSetIntegrity(dataSet) {
+        checkNumberOfAttributes(dataSet)
+        validateAttributesTypes(dataSet)
+        validateValuesScopes(dataSet)
+    }
+
+    function checkNumberOfAttributes(dataSet) {
+        for(let i = 0; i < dataSet.length; i++) {
+            if(dataSet[i].length !== Config.NumberOfAttributes)
+                throw new Error(`Liczba atrybutów w rekordzie ${i+1} jest nieprawidłowa!`)
+        }
+    }
+    
+    function validateAttributesTypes(dataSet) {
+        for(let i = 0; i < dataSet.length; i++) {
+            for(let j = 0; j < dataSet[i].length; j++) {
+                if(dataSet[i][j] === Config.MissingValuesSymbol) {
+
+                }
+                else if(Config.ColumnTypes[j] === "float" && isAttributeFloat(dataSet[i][j])) {
+                    dataSet[i][j] = parseFloat(dataSet[i][j])
+                }
+                else if(Config.ColumnTypes[j] === "int" && isAttributeInt(dataSet[i][j])) {
+                    dataSet[i][j] = parseInt(dataSet[i][j])
+                }
+                else if(Config.ColumnTypes[j] === "symbol" || Config.ColumnTypes[j] === "decision") {
+
+                }
+                else {
+                    throw new Error(`Niewłaściwy typ atrybutu ${j+1} w rekordzie ${i+1}`)
+                }
+            }
+        }
+    }
+
+    function isAttributeFloat(attribute) {
+        return (!isNaN(attribute) && !isNaN(parseFloat(attribute)))
+    }
+    
+    function isAttributeInt(attribute) {
+        return (!isNaN(attribute) && !isNaN(parseInt(attribute)) && Number.isInteger(parseFloat(attribute)))
+    }
+
+    function validateValuesScopes(dataSet) {
+        for(let i = 0; i < dataSet.length; i++) {
+            for(let j = 0; j < dataSet[i].length; j++) {
+                if(dataSet[i][j] === Config.MissingValuesSymbol) {
+
+                }
+                else if(typeof dataSet[i][j] === "number") {
+                    if(dataSet[i][j] < Config.ValuesScopes[j][0] || dataSet[i][j] > Config.ValuesScopes[j][1])
+                        throw new Error(`Wartość atrybutu ${j+1} w rekordzie ${i+1} nie mieści się w podanym zakresie!`)
+                }
+                else if(typeof dataSet[i][j] === "string") {
+                    let valueDetected = 0
+                    for(let k = 0; k < Config.ValuesScopes[j].length; k++) {
+                        if(dataSet[i][j] === Config.ValuesScopes[j][k]) {
+                            valueDetected = 1
+                            break
+                        }
+                    }
+                    if(!valueDetected) {
+                        throw new Error(`Wartość atrybutu ${j+1} w rekordzie ${i+1} nie mieści się w podanym zakresie!`)
+                    }
+                }
+                else {
+                    throw new Error(`Atrybut ${j+1} w rekordzie ${i+1} spowodował nieoczekiwany błąd!`)
+                }
+            }
+        }
     }
 
 </script>
