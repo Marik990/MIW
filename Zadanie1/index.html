@@ -70,7 +70,7 @@
 
             ["+", "-"]
         ],
-        NormalizationScope: [1, 0],
+        NormalizationScope: [0, 1, 3],
         Ready: true
     }
 
@@ -82,12 +82,16 @@
         try {
             const dataSet = createDataSet(rawFileContent)
             checkDataSetIntegrity(dataSet)
+            const normalizedDataSet = normalizeDataSet(dataSet)
 
-            displayText(rawFileContent, "board")
+            displayDataSet(normalizedDataSet)
             console.log(dataSet)
+            console.log(normalizedDataSet)
         }
         catch (e) {
             alert(`Błąd: ${e.message}`)
+            document.getElementById('upload-data-form').reset()
+            document.getElementById('board').innerText = ""
             throw new Error(`${e.message}`)
         }
     }
@@ -219,10 +223,85 @@
                     }
                 }
                 else {
-                    throw new Error(`Atrybut ${j+1} w rekordzie ${i+1} spowodował nieoczekiwany błąd!`)
+                    throw new Error(`Atrybut ${j+1} w rekordzie ${i+1} spowodował nieoczekiwany błąd w trakcie walidacji zakresu!`)
                 }
             }
         }
+    }
+    
+    function normalizeDataSet(dataSet) {
+        //   (x-min)/(max-min) - wzór na normalizację 0:1
+        let normalizedDataSet = []
+        for(let i = 0; i < dataSet.length; i++) {
+            normalizedDataSet.push(dataSet[i].slice(0))
+        }
+        normalizeNumbers(normalizedDataSet)
+        normalizeSymbols(normalizedDataSet)
+
+        return normalizedDataSet
+    }
+    
+    function normalizeNumbers(normalizedDataSet) {
+        for(let i = 0; i < Config.ColumnTypes.length; i++) {
+            if (Config.ColumnTypes[i] === "float" || Config.ColumnTypes[i] === "int") {
+                for (let j = 0; j < normalizedDataSet.length; j++) {
+                    if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                        alert("Ostrzeżenie: Wykryto brakujące wartości typu liczbowego! W procesie normalizacji zostaną one zamienione na medianę.")
+                        i = Config.ColumnTypes.length
+                        break;
+                    }
+                }
+            }
+        }
+
+        let sortedValues
+        let maxValue
+        let minValue
+        for(let icol = 0; icol < Config.ColumnTypes.length; icol++) {
+            if(Config.ColumnTypes[icol] === "float" || Config.ColumnTypes[icol] === "int") {
+                sortedValues = []
+                for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                    if(normalizedDataSet[irow][icol] === Config.MissingValuesSymbol) {
+                        continue
+                    }
+                    sortedValues.push(normalizedDataSet[irow][icol])
+                }
+                sortedValues.sort(function(a, b){return a-b})
+                for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                    if(normalizedDataSet[irow][icol] === Config.MissingValuesSymbol) {
+                        normalizedDataSet[irow][icol] = sortedValues[parseInt((sortedValues.length - 1) / 2)]
+                    }
+                }
+                minValue = sortedValues[0]
+                maxValue = sortedValues[sortedValues.length - 1]
+                for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                        normalizedDataSet[irow][icol] = ((normalizedDataSet[irow][icol]-minValue) + Config.NormalizationScope[0]) / ((maxValue-minValue) * Config.NormalizationScope[1])    //wzór na nrmalizację numeryczną w podanym zakresie
+
+                        let roundNumber = 1
+                        if(Config.NormalizationScope[2] > 0) {
+                            for(let i = 0; i < Config.NormalizationScope[2]; i++)
+                                roundNumber *= 10
+                        }
+                        normalizedDataSet[irow][icol] = Math.round((normalizedDataSet[irow][icol] + Number.EPSILON) * roundNumber) / roundNumber
+                }
+            }
+        }
+    }
+    
+    function normalizeSymbols(normalizedDataSet) {
+        for(let i = 0; i < Config.ColumnTypes.length; i++) {
+            if (Config.ColumnTypes[i] === "symbol") {
+                for (let j = 0; j < normalizedDataSet.length; j++) {
+                    if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                        alert("Ostrzeżenie: Wykryto brakujące wartości typu liczbowego! W procesie normalizacji zostaną one zamienione na medianę.")
+                        i = Config.ColumnTypes.length
+                        break;
+                    }
+                }
+            }
+        }
+
+        //throw new Error(`Atrybut ${j+1} w rekordzie ${i+1} spowodował nieoczekiwany błąd podczas normalizacji! Prawdopodobnie atrybut ten posiada typ, którego program nie potrafi znormalizować.`)
     }
 
 </script>

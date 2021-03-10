@@ -8,18 +8,39 @@ $('#back-btn').on("click",function(){
 
 $('#upload-data-btn').on('click',function () {
     readDataFile(document.getElementById('data-file'))
-
-    $('html,body').animate({
-        scrollTop: $("#board").offset().top
-    }, 'slow');
 })
 
-function displayText(text, elementId) {
+function displayText(text) {
     document.getElementById(elementId).innerText = text
+
+    $('html,body').animate({
+        scrollTop: $(`#board`).offset().top
+    }, 'slow');
 }
 
-function displayHTML(html, elementId) {
-    document.getElementById(elementId).innerHTML = html
+function displayDataSet(dataSet) {
+    let html = "<table cellspacing='0'>"
+
+    html += "<tr class='table-head'>"
+    html += "<th>id</th>"
+    for (let icol = 0; icol < Config.ColumnTypes.length; icol++) {
+        html += `<th>${Config.ColumnTypes[icol]}</th>`
+    }
+    html += "</tr>"
+    for(let irow = 0; irow < dataSet.length; irow++) {
+        html += "<tr>"
+        html += `<th>${irow+1}</th>`
+        for (let icol = 0; icol < dataSet[irow].length; icol++) {
+            html += `<th>${dataSet[irow][icol]}</th>`
+        }
+        html += "</tr>"
+    }
+    html += "</table>"
+
+    document.getElementById("board").innerHTML = html
+    $('html,body').animate({
+        scrollTop: $(`#board`).offset().top
+    }, 'slow');
 }
 
 function readDataFile(filePath) {
