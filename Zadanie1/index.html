@@ -18,12 +18,23 @@
     <main>
         <article>
             <section>
-                <div id="upload">
+                <div id="upload-data">
                     <form id="upload-data-form">
                         <label>
-                            <input id="data-file" type="file" name="dataFile">
+                            Wybierz plik z danymi:
                         </label>
+                        <input id="data-file" type="file" name="dataFile">
                         <input id="upload-data-btn" type="button" value="Uruchom">
+                    </form>
+                </div>
+
+                <div id="upload-config">
+                    <form id="config-data-form">
+                        <label>
+                            Załaduj plik konfiguracyjny:
+                        </label>
+                        <input id="config-file" type="file" name="configFile" style="padding-bottom: 10px">
+                        <input id="upload-config-btn" type="button" value="Załaduj">
                     </form>
                 </div>
             </section>
@@ -39,6 +50,14 @@
     </main>
 
 <script>
+
+    /*
+    możliwe rodzaje atrybutów: int, float, symbol, decision
+
+    uwaga do skryptu: wartości typu symbol są normalizowane inaczej niż wartości numeryczne
+                      wartości numeryczne są normalizowane według minimalnych i maksymalnych wartości obecnych w tabeli(niezależnie od możliwego zakresu w Config.ValuesScopes)
+                      wartości symboliczne są normalizowane według ilości możliwych symboli dla danej kolumny zawartych w Config.ValuesScopes
+     */
 
     const Config = {
         AttributesSeparator: ",",
@@ -70,7 +89,7 @@
 
             ["+", "-"]
         ],
-        NormalizationScope: [0, 1, 3],
+        NormalizationScope: [0, 1, 2],
         Ready: true
     }
 
@@ -85,8 +104,6 @@
             const normalizedDataSet = normalizeDataSet(dataSet)
 
             displayDataSet(normalizedDataSet)
-            console.log(dataSet)
-            console.log(normalizedDataSet)
         }
         catch (e) {
             alert(`Błąd: ${e.message}`)
@@ -230,7 +247,6 @@
     }
     
     function normalizeDataSet(dataSet) {
-        //   (x-min)/(max-min) - wzór na normalizację 0:1
         let normalizedDataSet = []
         for(let i = 0; i < dataSet.length; i++) {
             normalizedDataSet.push(dataSet[i].slice(0))
@@ -275,7 +291,8 @@
                 minValue = sortedValues[0]
                 maxValue = sortedValues[sortedValues.length - 1]
                 for(let irow = 0; irow < normalizedDataSet.length; irow++) {
-                        normalizedDataSet[irow][icol] = ((normalizedDataSet[irow][icol]-minValue) + Config.NormalizationScope[0]) / ((maxValue-minValue) * Config.NormalizationScope[1])    //wzór na nrmalizację numeryczną w podanym zakresie
+                        normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol]-minValue) / (maxValue-minValue)    //wzór na nrmalizację numeryczną w zakresie 0:1
+                        normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol] * (Config.NormalizationScope[1] - Config.NormalizationScope[0])) + Config.NormalizationScope[0] //dodatkowy wzór przekształacający normalizację 0:1 do podanego zakresu
 
                         let roundNumber = 1
                         if(Config.NormalizationScope[2] > 0) {
@@ -289,11 +306,12 @@
     }
     
     function normalizeSymbols(normalizedDataSet) {
+        //wykryj brakujące wartości
         for(let i = 0; i < Config.ColumnTypes.length; i++) {
             if (Config.ColumnTypes[i] === "symbol") {
                 for (let j = 0; j < normalizedDataSet.length; j++) {
                     if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
-                        alert("Ostrzeżenie: Wykryto brakujące wartości typu liczbowego! W procesie normalizacji zostaną one zamienione na medianę.")
+                        alert("Ostrzeżenie: Wykryto brakujące wartości typu symbol! W procesie normalizacji zostaną one zamienione na wartości występujące najczęściej.")
                         i = Config.ColumnTypes.length
                         break;
                     }
@@ -301,8 +319,76 @@
             }
         }
 
-        //throw new Error(`Atrybut ${j+1} w rekordzie ${i+1} spowodował nieoczekiwany błąd podczas normalizacji! Prawdopodobnie atrybut ten posiada typ, którego program nie potrafi znormalizować.`)
+        //uzupełnij brakujące wartości
+        let columnArray = []
+        let mostFrequentItem
+        for(let i = 0; i < Config.ColumnTypes.length; i++) {
+            if (Config.ColumnTypes[i] === "symbol") {
+                for (let j = 0; j < normalizedDataSet.length; j++) {
+                    if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                        continue
+                    }
+                    columnArray.push(normalizedDataSet[j][i])
+                }
+                mostFrequentItem = findMostFrequentItemInArray(columnArray)
+                for (let j = 0; j < normalizedDataSet.length; j++) {
+                    if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                        normalizedDataSet[j][i] = mostFrequentItem
+                    }
+                }
+            }
+            columnArray = []
+        }
+
+        //zamień wszystkie wartości na liczby
+        for(let i = 0; i < Config.ColumnTypes.length; i++) {
+            if (Config.ColumnTypes[i] === "symbol") {
+                for (let j = 0; j < Config.ValuesScopes[i].length; j++) {
+                    for(let k = 0; k < normalizedDataSet.length; k++) {
+                        if(normalizedDataSet[k][i] === Config.ValuesScopes[i][j]) {
+                            normalizedDataSet[k][i] = j
+                        }
+                    }
+                }
+            }
+        }
+
+        //znormalizuj wartości
+        let maxValue
+        let minValue
+        for(let icol = 0; icol < Config.ColumnTypes.length; icol++) {
+            if (Config.ColumnTypes[icol] === "symbol") {
+                minValue = 0
+                maxValue = Config.ValuesScopes[icol].length - 1
+                for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                    normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol]-minValue) / (maxValue-minValue)    //wzór na nrmalizację numeryczną w zakresie 0:1
+                    normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol] * (Config.NormalizationScope[1] - Config.NormalizationScope[0])) + Config.NormalizationScope[0] //dodatkowy wzór przekształacający normalizację 0:1 do podanego zakresu
+
+                    let roundNumber = 1
+                    if(Config.NormalizationScope[2] > 0) {
+                        for(let i = 0; i < Config.NormalizationScope[2]; i++)
+                            roundNumber *= 10
+                    }
+                    normalizedDataSet[irow][icol] = Math.round((normalizedDataSet[irow][icol] + Number.EPSILON) * roundNumber) / roundNumber
+                }
+            }
+        }
     }
+
+    function findMostFrequentItemInArray(arr){
+        let newArray = arr.slice()
+
+        return newArray.sort((a,b) =>
+            newArray.filter(v => v===a).length
+            - newArray.filter(v => v===b).length
+        ).pop();
+    }
+
+    /*
+    To Do List:
+    - przetwarzanie pliku konfiguracyjnego
+    - zapis znormalizowanych danych do pliku
+     */
 
 </script>
     <script src="additionalScripts.js" type="text/javascript"></script>

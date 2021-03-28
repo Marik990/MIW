@@ -10,6 +10,10 @@ $('#upload-data-btn').on('click',function () {
     readDataFile(document.getElementById('data-file'))
 })
 
+$('#upload-config-btn').on('click',function () {
+    readDataFile(document.getElementById('config-file'))
+})
+
 function displayText(text) {
     document.getElementById(elementId).innerText = text
 

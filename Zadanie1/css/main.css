@@ -20,14 +20,42 @@ body
     border-radius: 30px;
 }
 
-#upload
+#upload-data
 {
     width: min-content;
     padding: 10px 10px;
     margin: 10px auto;
     text-align: center;
     background-color: darkred;
+    border: 10px solid black;
     border-radius: 1px;
+}
+
+#upload-data input
+{
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#upload-config
+{
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min-content;
+    padding: 10px 0 10px 10px;
+    text-align: center;
+    background-color: darkgrey;
+    border: 10px solid black;
+    border-radius: 1px;
+}
+
+#upload-config input
+{
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 #board
@@ -39,13 +67,6 @@ body
     background-color: darkred;
     border-radius: 5px;
     overflow: scroll;
-}
-
-#upload input
-{
-    font-size: 26px;
-    font-weight: bold;
-    cursor: pointer;
 }
 
 #back-btn
