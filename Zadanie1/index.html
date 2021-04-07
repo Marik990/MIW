@@ -18,6 +18,17 @@
     <main>
         <article>
             <section>
+
+                <div id="upload-config">
+                    <form id="upload-config-form">
+                        <label>
+                            Załaduj plik konfiguracyjny:
+                        </label>
+                        <input id="config-file" type="file" name="configFile" style="padding-bottom: 10px">
+                        <input id="upload-config-btn" type="button" value="Załaduj">
+                    </form>
+                </div>
+
                 <div id="upload-data">
                     <form id="upload-data-form">
                         <label>
@@ -28,15 +39,6 @@
                     </form>
                 </div>
 
-                <div id="upload-config">
-                    <form id="config-data-form">
-                        <label>
-                            Załaduj plik konfiguracyjny:
-                        </label>
-                        <input id="config-file" type="file" name="configFile" style="padding-bottom: 10px">
-                        <input id="upload-config-btn" type="button" value="Załaduj">
-                    </form>
-                </div>
             </section>
             <section>
                 <div id="board">
@@ -54,51 +56,264 @@
     /*
     możliwe rodzaje atrybutów: int, float, symbol, decision
 
-    uwaga do skryptu: wartości typu symbol są normalizowane inaczej niż wartości numeryczne
+    uwaga1: wartości typu symbol są normalizowane inaczej niż wartości numeryczne
                       wartości numeryczne są normalizowane według minimalnych i maksymalnych wartości obecnych w tabeli(niezależnie od możliwego zakresu w Config.ValuesScopes)
                       wartości symboliczne są normalizowane według ilości możliwych symboli dla danej kolumny zawartych w Config.ValuesScopes
+
+     uwaga2: znaki nowej linii mogą służyć jedynie jako separatory(atrybutów lub rekordów)
      */
 
+    // const Config = {
+    //     AttributesSeparator: ",",
+    //     RowsSeparator: "\n",
+    //     MissingValuesSymbol: "?",
+    //     NumberOfAttributes: 16,
+    //     ColumnTypes: [  "symbol", "float", "float", "symbol", "symbol",
+    //                     "symbol", "symbol", "float", "symbol", "symbol",
+    //                     "float", "symbol", "symbol", "int", "int",
+    //                     "decision"],
+    //     ValuesScopes: [
+    //         ["b", "a"],
+    //         [0, 100],
+    //         [0, 100],
+    //         ["u", "y", "l", "t"],
+    //         ["g", "p", "gg"],
+    //
+    //         ["c", "d", "cc", "i", "j", "k", "m", "r", "q", "w", "x", "e", "aa", "ff"],
+    //         ["v", "h", "bb", "j", "n", "z", "dd", "ff", "o"],
+    //         [0, 100],
+    //         ["t", "f"],
+    //         ["t", "f"],
+    //
+    //         [0, 100],
+    //         ["t", "f"],
+    //         ["g", "p", "s"],
+    //         [0, 99999],
+    //         [0, 999999],
+    //
+    //         ["+", "-"]
+    //     ],
+    //     NormalizationScope: [0, 1, 2],
+    //     Ready: false
+    // }
+
     const Config = {
-        AttributesSeparator: ",",
-        RowsSeparator: "\n",
-        MissingValuesSymbol: "?",
-        NumberOfAttributes: 16,
-        ColumnTypes: [  "symbol", "float", "float", "symbol", "symbol",
-                        "symbol", "symbol", "float", "symbol", "symbol",
-                        "float", "symbol", "symbol", "int", "int",
-                        "decision"],
-        ValuesScopes: [
-            ["b", "a"],
-            [0, 100],
-            [0, 100],
-            ["u", "y", "l", "t"],
-            ["g", "p", "gg"],
-
-            ["c", "d", "cc", "i", "j", "k", "m", "r", "q", "w", "x", "e", "aa", "ff"],
-            ["v", "h", "bb", "j", "n", "z", "dd", "ff", "o"],
-            [0, 100],
-            ["t", "f"],
-            ["t", "f"],
-
-            [0, 100],
-            ["t", "f"],
-            ["g", "p", "s"],
-            [0, 99999],
-            [0, 999999],
-
-            ["+", "-"]
-        ],
-        NormalizationScope: [0, 1, 2],
-        Ready: true
+        AttributesSeparator: "",
+        RowsSeparator: "",
+        MissingValuesSymbol: "",
+        NumberOfAttributes: null,
+        ColumnTypes: [],
+        ValuesScopes: [],
+        NormalizationScope: [],
+        Ready: false
     }
 
     function processConfigFile(rawConfig) {
-        //napisać proces przetwarzania pliku konfiguracyjnego przy pomocy surowych danych
+        try {
+            clearConfig()
+            loadConfigData(rawConfig)
+            checkConfigIntegrity()
+
+            Config.Ready = true
+            console.log(Config)
+        }
+        catch (e) {
+            alert(`Błąd: ${e.message}`)
+            Config.Ready = false
+            throw new Error(`${e.message}`)
+        }
+    }
+
+    function clearConfig() {
+        Config.AttributesSeparator = "";
+        Config.RowsSeparator = "";
+        Config.MissingValuesSymbol = "";
+        Config.NumberOfAttributes = null;
+        Config.ColumnTypes = [];
+        Config.ValuesScopes = [];
+        Config.NormalizationScope = [];
+        Config.Ready = false;
+    }
+    
+    function loadConfigData(rawConfig) {
+        if (rawConfig.length <= 0)
+            throw new Error("Plik konfiguracyjny jest pusty!")
+
+        let charIndex = 0
+
+        //AttributesSeparator
+        for (let i = charIndex; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '"') {
+                i++
+                let attributesSeparator = ""
+                while (rawConfig.charAt(i) !== '"') {
+                    attributesSeparator += rawConfig.charAt(i)
+                    i++
+                }
+                Config.AttributesSeparator = attributesSeparator
+                i++
+                charIndex = i
+                if (Config.AttributesSeparator === '\\n' || Config.AttributesSeparator === '\\r' || Config.AttributesSeparator === '\\r\\n' || Config.AttributesSeparator === '\\n\\r') {
+                    Config.AttributesSeparator = '\n'
+                }
+                break
+            }
+        }
+
+        //RowsSeparator
+        for (let i = charIndex; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '"') {
+                i++
+                let rowsSeparator = ""
+                while (rawConfig.charAt(i) !== '"') {
+                    rowsSeparator += rawConfig.charAt(i)
+                    i++
+                }
+                Config.RowsSeparator = rowsSeparator
+                i++
+                charIndex = i
+                if (Config.RowsSeparator === '\\n' || Config.RowsSeparator === '\\r' || Config.RowsSeparator === '\\r\\n' || Config.RowsSeparator === '\\n\\r') {
+                    Config.RowsSeparator = '\n'
+                }
+                break
+            }
+        }
+
+        //MissingValuesSymbol
+        for (let i = charIndex; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '"') {
+                i++
+                let missingValuesSymbol = ""
+                while (rawConfig.charAt(i) !== '"') {
+                    missingValuesSymbol += rawConfig.charAt(i)
+                    i++
+                }
+                Config.MissingValuesSymbol = missingValuesSymbol
+                i++
+                charIndex = i
+                break
+            }
+        }
+
+        //NumberOfAttributes
+        for (let i = charIndex; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '"') {
+                i++
+                let numberOfAttributes = ""
+                while (rawConfig.charAt(i) !== '"') {
+                    numberOfAttributes += rawConfig.charAt(i)
+                    i++
+                }
+                Config.NumberOfAttributes = numberOfAttributes
+                i++
+                charIndex = i
+                break
+            }
+        }
+
+        //ColumnTypes
+        for (let i = charIndex, columnType = ""; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '"') {
+                do {
+                    if (rawConfig.charAt(i) === '"') {
+                        i++
+                        columnType = ""
+                        while (rawConfig.charAt(i) !== '"' && i < rawConfig.length) {
+                            columnType += rawConfig.charAt(i)
+                            i++
+                        }
+                        Config.ColumnTypes.push(columnType)
+                    }
+                    i++
+                    charIndex = i
+                    if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                        break
+                    }
+                } while (i < rawConfig.length)
+                break
+            }
+        }
+
+        //ValuesScopes
+        for (let i = charIndex, scopeArray = [], scopeValue = ""; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '[') {
+                do {
+                    if (rawConfig.charAt(i) === '[') {
+                        i++
+                        scopeArray = []
+                        while (rawConfig.charAt(i) !== ']' && i < rawConfig.length) {
+
+                            do {
+                                if (rawConfig.charAt(i) === '"') {
+                                    i++
+                                    scopeValue = ""
+                                    while (rawConfig.charAt(i) !== '"' && i < rawConfig.length) {
+                                        scopeValue += rawConfig.charAt(i)
+                                        i++
+                                    }
+                                    break
+                                }
+                                if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                                    break
+                                }
+                                if(rawConfig.charAt(i) === ']') {
+                                    break
+                                }
+                                i++
+                            } while (i < rawConfig.length)
+
+                            if(rawConfig.charAt(i) === ']') {
+                                break
+                            }
+                            scopeArray.push(scopeValue)
+                            i++
+                        }
+                        Config.ValuesScopes.push(scopeArray)
+                    }
+                    i++
+                    charIndex = i
+                    if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                        break
+                    }
+                } while (i < rawConfig.length)
+                break
+            }
+        }
+
+        //NormalizationScope
+        for (let i = charIndex, normalizationValue = ""; i < rawConfig.length; i++) {
+            if (rawConfig.charAt(i) === '"') {
+                do {
+                    if (rawConfig.charAt(i) === '"') {
+                        i++
+                        normalizationValue = ""
+                        while (rawConfig.charAt(i) !== '"' && i < rawConfig.length) {
+                            normalizationValue += rawConfig.charAt(i)
+                            i++
+                        }
+                        Config.NormalizationScope.push(normalizationValue)
+                    }
+                    i++
+                    charIndex = i
+                    if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                        break
+                    }
+                } while (i < rawConfig.length)
+                break
+            }
+        }
+
+    }
+    
+    function checkConfigIntegrity(configData) {
+        
     }
 
     function processDataFileContent(rawFileContent) {
         try {
+            if(Config.Ready === false)
+                throw new Error("Plik konfiguracyjny nie został załadowany!")
+
             const dataSet = createDataSet(rawFileContent)
             checkDataSetIntegrity(dataSet)
             const normalizedDataSet = normalizeDataSet(dataSet)
@@ -107,7 +322,6 @@
         }
         catch (e) {
             alert(`Błąd: ${e.message}`)
-            document.getElementById('upload-data-form').reset()
             document.getElementById('board').innerText = ""
             throw new Error(`${e.message}`)
         }
@@ -387,7 +601,10 @@
     /*
     To Do List:
     - przetwarzanie pliku konfiguracyjnego
-    - zapis znormalizowanych danych do pliku
+        *sprawdzanie poprawności configu
+    - zapis do pliku
+        *przed normalizacją
+        *po normalizacji
      */
 
 </script>

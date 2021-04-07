@@ -1,4 +1,5 @@
 document.getElementById('upload-data-form').reset()
+document.getElementById('upload-config-form').reset()
 
 $('#back-btn').on("click",function(){
     $('html,body').animate({
@@ -11,7 +12,7 @@ $('#upload-data-btn').on('click',function () {
 })
 
 $('#upload-config-btn').on('click',function () {
-    readDataFile(document.getElementById('config-file'))
+    readConfigFile(document.getElementById('config-file'))
 })
 
 function displayText(text) {
