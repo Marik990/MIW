@@ -35,7 +35,8 @@
                             Wybierz plik z danymi:
                         </label>
                         <input id="data-file" type="file" name="dataFile">
-                        <input id="upload-data-btn" type="button" value="Uruchom">
+                        <input id="load-rawdataset-btn" type="button" value="Pokaż dataset">
+                        <input id="load-normalizeddataset-btn" type="button" value="Pokaż znormalizowany dataset">
                     </form>
                 </div>
 
@@ -45,8 +46,13 @@
 
                 </div>
             </section>
-            <div id="back-btn">
-                <button>Wróć</button>
+            <div id="bottom-panel">
+                <div id="back-btn">
+                    <button>Wróć</button>
+                </div>
+                <div id="save-btn">
+                    <button>Zapisz</button>
+                </div>
             </div>
         </article>
     </main>
@@ -62,40 +68,6 @@
 
      uwaga2: znaki nowej linii mogą służyć jedynie jako separatory(atrybutów lub rekordów)
      */
-
-    // const Config = {
-    //     AttributesSeparator: ",",
-    //     RowsSeparator: "\n",
-    //     MissingValuesSymbol: "?",
-    //     NumberOfAttributes: 16,
-    //     ColumnTypes: [  "symbol", "float", "float", "symbol", "symbol",
-    //                     "symbol", "symbol", "float", "symbol", "symbol",
-    //                     "float", "symbol", "symbol", "int", "int",
-    //                     "decision"],
-    //     ValuesScopes: [
-    //         ["b", "a"],
-    //         [0, 100],
-    //         [0, 100],
-    //         ["u", "y", "l", "t"],
-    //         ["g", "p", "gg"],
-    //
-    //         ["c", "d", "cc", "i", "j", "k", "m", "r", "q", "w", "x", "e", "aa", "ff"],
-    //         ["v", "h", "bb", "j", "n", "z", "dd", "ff", "o"],
-    //         [0, 100],
-    //         ["t", "f"],
-    //         ["t", "f"],
-    //
-    //         [0, 100],
-    //         ["t", "f"],
-    //         ["g", "p", "s"],
-    //         [0, 99999],
-    //         [0, 999999],
-    //
-    //         ["+", "-"]
-    //     ],
-    //     NormalizationScope: [0, 1, 2],
-    //     Ready: false
-    // }
 
     const Config = {
         AttributesSeparator: "",
@@ -115,24 +87,25 @@
             checkConfigIntegrity()
 
             Config.Ready = true
-            console.log(Config)
+            alert("Plik konfiguracyjny załadowany poprawnie.")
         }
         catch (e) {
             alert(`Błąd: ${e.message}`)
             Config.Ready = false
+            document.getElementById('upload-config-form').reset()
             throw new Error(`${e.message}`)
         }
     }
 
     function clearConfig() {
-        Config.AttributesSeparator = "";
-        Config.RowsSeparator = "";
-        Config.MissingValuesSymbol = "";
-        Config.NumberOfAttributes = null;
-        Config.ColumnTypes = [];
-        Config.ValuesScopes = [];
-        Config.NormalizationScope = [];
-        Config.Ready = false;
+        Config.AttributesSeparator = ""
+        Config.RowsSeparator = ""
+        Config.MissingValuesSymbol = ""
+        Config.NumberOfAttributes = null
+        Config.ColumnTypes = []
+        Config.ValuesScopes = []
+        Config.NormalizationScope = []
+        Config.Ready = false
     }
     
     function loadConfigData(rawConfig) {
@@ -306,10 +279,125 @@
     }
     
     function checkConfigIntegrity(configData) {
-        
+
+        if(Config.AttributesSeparator.length <= 0 || Config.AttributesSeparator.length > 1) {
+            throw new Error("Niepoprawnie zdefiniowany separator atrybutów w pliku konfiguracyjnym. Musi to być pojedynczy znak lub \'\\n\'(znak nowej linii).")
+        }
+
+        if(Config.RowsSeparator.length <= 0 || Config.RowsSeparator.length > 1) {
+            throw new Error("Niepoprawnie zdefiniowany separator rekordów w pliku konfiguracyjnym. Musi to być pojedynczy znak lub \'\\n\'(znak nowej linii).")
+        }
+
+        if(Config.MissingValuesSymbol.length <= 0) {
+            alert("Ostrzeżenie: Nie zdefiniowano symbolu dla brakujących wartości. Może to doprowadzić do nieprawidłowego odczytu/przetwarzania danych.")
+        }
+
+        if(Config.NumberOfAttributes.length <= 0) {
+            alert("Ostrzeżenie: Nie zdefiniowano liczby atrybutów. Może to doprowadzić do nieprawidłowego działania programu.")
+        }
+        else if(!isAttributeInt(Config.NumberOfAttributes)) {
+            throw new Error("Niepoprawnie zdefiniowana liczba atrybutów w pliku konfiguracyjnym. Musi to być liczba całkowita.")
+        }
+        else {
+            Config.NumberOfAttributes = parseInt(Config.NumberOfAttributes)
+        }
+
+        if(Config.ColumnTypes.length !== Config.NumberOfAttributes) {
+            throw new Error("Ilość zdefiniowanych typów atrybutów w pliku konfiguracyjnym jest niezgodna z liczbą atrybutów podaną wcześniej.")
+        }
+        for(let i = 0; i < Config.ColumnTypes.length; i++) {
+            if(Config.ColumnTypes[i] === "int") {
+
+            }
+            else if(Config.ColumnTypes[i] === "float") {
+
+            }
+            else if(Config.ColumnTypes[i] === "symbol") {
+
+            }
+            else if(Config.ColumnTypes[i] === "decision") {
+
+            }
+            else {
+                throw new Error(`Zdefiniowano nieprawidłowy typ atrybutu w ${i+1} komórce.
+                Program nie rozpoznaje typu "${Config.ColumnTypes[i]}"`)
+            }
+        }
+
+        if(Config.ValuesScopes.length !== Config.NumberOfAttributes) {
+            throw new Error("Ilość zdefiniowanych zakresów wartości atrybutów w pliku konfiguracyjnym jest niezgodna z liczbą atrybutów podaną wcześniej.")
+        }
+        for(let i = 0; i < Config.ValuesScopes.length; i++) {
+            if(Config.ColumnTypes[i] === "int") {
+                if(Config.ValuesScopes[i].length !== 2) {
+                    throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla atrybutów liczbowych zakres powinny stanowić dwie liczby(min i max).`)
+                }
+                else if(!isAttributeInt(Config.ValuesScopes[i][0])) {
+                    throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu int zakres powinny stanowić tylko liczby całkowite.`)
+                }
+                else if(!isAttributeInt(Config.ValuesScopes[i][1])) {
+                    throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu int zakres powinny stanowić tylko liczby całkowite.`)
+                }
+                else {
+                    Config.ValuesScopes[i][0] = parseInt(Config.ValuesScopes[i][0])
+                    Config.ValuesScopes[i][1] = parseInt(Config.ValuesScopes[i][1])
+                }
+            }
+
+            else if(Config.ColumnTypes[i] === "float") {
+                if(Config.ValuesScopes[i].length !== 2) {
+                    throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla atrybutów liczbowych zakres powinny stanowić dwie liczby(min i max).`)
+                }
+                else if(!isAttributeFloat(Config.ValuesScopes[i][0])) {
+                    throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu float zakres powinny stanowić tylko liczby rzeczywiste.`)
+                }
+                else if(!isAttributeFloat(Config.ValuesScopes[i][1])) {
+                    throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu float zakres powinny stanowić tylko liczby rzeczywiste.`)
+                }
+                else {
+                    Config.ValuesScopes[i][0] = parseFloat(Config.ValuesScopes[i][0])
+                    Config.ValuesScopes[i][1] = parseFloat(Config.ValuesScopes[i][1])
+                }
+            }
+        }
+
+        if(Config.NormalizationScope.length !== 3) {
+            throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+        }
+        else if(!isAttributeFloat(Config.NormalizationScope[0])) {
+            throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+        }
+        else if(!isAttributeFloat(Config.NormalizationScope[1])) {
+            throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+        }
+        else if(!isAttributeInt(Config.NormalizationScope[2])) {
+            throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+        }
+        else {
+            Config.NormalizationScope[0] = parseFloat(Config.NormalizationScope[0])
+            Config.NormalizationScope[1] = parseFloat(Config.NormalizationScope[1])
+            Config.NormalizationScope[2] = parseInt(Config.NormalizationScope[2])
+        }
     }
 
     function processDataFileContent(rawFileContent) {
+        try {
+            if(Config.Ready === false)
+                throw new Error("Plik konfiguracyjny nie został załadowany!")
+
+            const dataSet = createDataSet(rawFileContent)
+            checkDataSetIntegrity(dataSet)
+
+            displayDataSet(dataSet)
+        }
+        catch (e) {
+            alert(`Błąd: ${e.message}`)
+            document.getElementById('board').innerText = ""
+            throw new Error(`${e.message}`)
+        }
+    }
+
+    function processDataFileNormalization(rawFileContent) {
         try {
             if(Config.Ready === false)
                 throw new Error("Plik konfiguracyjny nie został załadowany!")
@@ -600,11 +688,10 @@
 
     /*
     To Do List:
-    - przetwarzanie pliku konfiguracyjnego
-        *sprawdzanie poprawności configu
-    - zapis do pliku
-        *przed normalizacją
-        *po normalizacji
+    - stworzyć 3 metody zapisu(jedna już jest)
+    *.txt
+    *.html
+    *.json?
      */
 
 </script>

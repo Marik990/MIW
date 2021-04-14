@@ -7,21 +7,22 @@ $('#back-btn').on("click",function(){
     }, 'slow');
 });
 
-$('#upload-data-btn').on('click',function () {
+$('#load-rawdataset-btn').on('click',function () {
     readDataFile(document.getElementById('data-file'))
+})
+
+$('#load-normalizeddataset-btn').on('click',function () {
+    readAndNormalizeDataFile(document.getElementById('data-file'))
 })
 
 $('#upload-config-btn').on('click',function () {
     readConfigFile(document.getElementById('config-file'))
 })
 
-function displayText(text) {
-    document.getElementById(elementId).innerText = text
-
-    $('html,body').animate({
-        scrollTop: $(`#board`).offset().top
-    }, 'slow');
-}
+$('#save-btn').on('click',function () {
+    let dataset = document.getElementById("board").innerText;
+    downloadToFile(dataset, 'dataset.txt', 'text/plain')
+})
 
 function displayDataSet(dataSet) {
     let html = "<table cellspacing='0'>"
@@ -86,6 +87,44 @@ function readDataFile(filePath) {
     return true;
 }
 
+function readAndNormalizeDataFile(filePath) {
+    try {
+        if (checkFileAPI() === false)
+            return false
+        let reader = new FileReader()
+        let output = ""
+        if (filePath.files && filePath.files[0]) {
+            reader.onload = function (e) {
+                output = e.target.result;
+                processDataFileNormalization(output);
+            };//end onload()
+            reader.readAsText(filePath.files[0]);
+        }//end if html5 filelist support
+        else if (ActiveXObject && filePath) { //fallback to IE 6-8 support via ActiveX
+            try {
+                reader = new ActiveXObject("Scripting.FileSystemObject");
+                let file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
+                output = file.ReadAll(); //text contents of file
+                file.Close(); //close file "input stream"
+                processDataFileNormalization(output);
+            } catch (e) {
+                if (e.number == -2146827859) {
+                    alert('Unable to access local files due to browser security settings. ' +
+                        'To overcome this, go to Tools->Internet Options->Security->Custom Level. ' +
+                        'Find the setting for "Initialize and script ActiveX controls not marked as safe" and change it to "Enable" or "Prompt"');
+                }
+            }
+        } else { //this is where you could fallback to Java Applet, Flash or similar
+            return false;
+        }
+    }
+    catch (e) {
+        alert(`Błąd: Nie można załadować pliku z danymi!`)
+        throw new Error(`${e.message}`)
+    }
+    return true;
+}
+
 function readConfigFile(filePath) {
     try {
         if (checkFileAPI() === false)
@@ -132,3 +171,14 @@ function checkFileAPI() {
         return false;
     }
 }
+
+const downloadToFile = (content, filename, contentType) => {
+    const a = document.createElement('a');
+    const file = new Blob([content], {type: contentType});
+
+    a.href= URL.createObjectURL(file);
+    a.download = filename;
+    a.click();
+
+    URL.revokeObjectURL(a.href);
+};
