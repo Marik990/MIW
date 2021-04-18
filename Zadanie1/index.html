@@ -50,8 +50,14 @@
                 <div id="back-btn">
                     <button>Wróć</button>
                 </div>
-                <div id="save-btn">
-                    <button>Zapisz</button>
+                <div class="save-btn" id="save-txt-btn">
+                    <button>Zapisz jako txt</button>
+                </div>
+                <div class="save-btn" id="save-html-btn">
+                    <button>Zapisz jako HTML</button>
+                </div>
+                <div class="save-btn" id="save-json-btn">
+                    <button>Zapisz jako JSON</button>
                 </div>
             </div>
         </article>
@@ -79,6 +85,8 @@
         NormalizationScope: [],
         Ready: false
     }
+
+    let MainDataSet = [];
 
     function processConfigFile(rawConfig) {
         try {
@@ -388,6 +396,7 @@
             const dataSet = createDataSet(rawFileContent)
             checkDataSetIntegrity(dataSet)
 
+            MainDataSet = dataSet
             displayDataSet(dataSet)
         }
         catch (e) {
@@ -406,6 +415,7 @@
             checkDataSetIntegrity(dataSet)
             const normalizedDataSet = normalizeDataSet(dataSet)
 
+            MainDataSet = normalizedDataSet
             displayDataSet(normalizedDataSet)
         }
         catch (e) {
@@ -685,14 +695,6 @@
             - newArray.filter(v => v===b).length
         ).pop();
     }
-
-    /*
-    To Do List:
-    - stworzyć 3 metody zapisu(jedna już jest)
-    *.txt
-    *.html
-    *.json?
-     */
 
 </script>
     <script src="additionalScripts.js" type="text/javascript"></script>

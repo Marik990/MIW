@@ -74,7 +74,7 @@ body {
 
 #back-btn {
     width: min-content;
-    margin: 0 auto;
+    margin: 0 auto 0 5px;
 }
 
 #back-btn button {
@@ -84,11 +84,12 @@ body {
     padding: 0 25px;
 }
 
-#save-btn {
-    width: min-content;
+.save-btn {
+    width: max-content;
+    margin: 0 5px;
 }
 
-#save-btn button {
+.save-btn button {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;

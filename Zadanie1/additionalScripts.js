@@ -19,9 +19,19 @@ $('#upload-config-btn').on('click',function () {
     readConfigFile(document.getElementById('config-file'))
 })
 
-$('#save-btn').on('click',function () {
+$('#save-txt-btn').on('click',function () {
     let dataset = document.getElementById("board").innerText;
     downloadToFile(dataset, 'dataset.txt', 'text/plain')
+})
+
+$('#save-html-btn').on('click',function () {
+    let dataset = document.getElementById("board").innerHTML;
+    downloadToFile(dataset, 'dataset.html', 'text/plain')
+})
+
+$('#save-json-btn').on('click',function () {
+    let dataset = JSON.stringify(MainDataSet)
+    downloadToFile(dataset, 'dataset.json', 'text/plain')
 })
 
 function displayDataSet(dataSet) {
