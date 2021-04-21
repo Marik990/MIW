@@ -7,8 +7,9 @@ body {
     padding: 0;
 }
 
-#title {
+.title {
     font-size: 32px;
+    font-weight: bold;
     margin: 10px auto;
     padding-top: 5px;
     width: 500px;
@@ -19,7 +20,7 @@ body {
     border-radius: 30px;
 }
 
-#upload-data {
+.upload-data {
     width: min-content;
     padding: 10px 10px;
     margin: 10px auto;
@@ -29,7 +30,7 @@ body {
     border-radius: 1px;
 }
 
-#upload-data input {
+.upload-data input {
     font-size: 26px;
     font-weight: bold;
     cursor: pointer;
@@ -40,7 +41,7 @@ body {
     margin: 5px 0;
 }
 
-#upload-config {
+.upload-config {
     width: min-content;
     padding: 10px 10px;
     margin: 10px auto;
@@ -50,13 +51,13 @@ body {
     border-radius: 1px;
 }
 
-#upload-config input {
+.upload-config input {
     font-size: 26px;
     font-weight: bold;
     cursor: pointer;
 }
 
-#board {
+.board {
     width: 97vw;
     height: 93vh;
     margin: 20px auto 0 auto;
@@ -67,17 +68,17 @@ body {
     overflow: scroll;
 }
 
-#bottom-panel {
+.bottom-panel {
     text-align: center;
     display: flex;
 }
 
-#back-btn {
+.back-btn {
     width: min-content;
     margin: 0 auto 0 5px;
 }
 
-#back-btn button {
+.back-btn button {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
@@ -107,4 +108,26 @@ th, td {
 
 table {
     border: 3px solid black;
+}
+
+.dodatek-link {
+    width: max-content;
+    border: 3px solid yellow;
+    position: absolute;
+    left: 20px;
+    font-size: 22px;
+}
+
+.dodatek-link a {
+    text-decoration: none;
+    color: red;
+}
+
+.dodatek-link a:hover {
+    color: gold;
+}
+
+#generate-btn {
+    width: min-content;
+    margin: 5px 0;
 }
