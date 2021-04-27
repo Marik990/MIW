@@ -38,12 +38,14 @@ function displayDataSet(dataSet) {
     let html = "<table cellspacing='0'>"
 
     html += "<tr class='table-head'>"
+    html += "<th>id</th>"
     for (let icol = 0; icol < Config.ColumnTypes.length; icol++) {
         html += `<th>${Config.ColumnTypes[icol]}</th>`
     }
     html += "</tr>"
     for(let irow = 0; irow < dataSet.length; irow++) {
         html += "<tr>"
+        html += `<th>${irow+1}</th>`
         for (let icol = 0; icol < dataSet[irow].length; icol++) {
             html += `<th>${dataSet[irow][icol]}</th>`
         }
