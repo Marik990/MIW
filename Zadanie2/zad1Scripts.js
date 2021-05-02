@@ -1,0 +1,626 @@
+/*
+    możliwe rodzaje atrybutów: int, float, symbol, decision
+
+    uwaga1: wartości typu symbol są normalizowane inaczej niż wartości numeryczne
+                      wartości numeryczne są normalizowane według minimalnych i maksymalnych wartości obecnych w tabeli(niezależnie od możliwego zakresu w Config.ValuesScopes)
+                      wartości symboliczne są normalizowane według ilości możliwych symboli dla danej kolumny zawartych w Config.ValuesScopes
+
+     uwaga2: znaki nowej linii mogą służyć jedynie jako separatory(atrybutów lub rekordów)
+     */
+
+const Config = {
+    AttributesSeparator: "",
+    RowsSeparator: "",
+    MissingValuesSymbol: "",
+    NumberOfAttributes: null,
+    ColumnTypes: [],
+    ValuesScopes: [],
+    NormalizationScope: [],
+    Ready: false
+}
+
+let MainDataSet = [];
+
+function processConfigFile(rawConfig) {
+    try {
+        clearConfig()
+        loadConfigData(rawConfig)
+        checkConfigIntegrity()
+
+        Config.Ready = true
+        alert("Plik konfiguracyjny załadowany poprawnie.")
+    }
+    catch (e) {
+        alert(`Błąd: ${e.message}`)
+        Config.Ready = false
+        document.getElementById('upload-config-form').reset()
+        throw new Error(`${e.message}`)
+    }
+}
+
+function clearConfig() {
+    Config.AttributesSeparator = ""
+    Config.RowsSeparator = ""
+    Config.MissingValuesSymbol = ""
+    Config.NumberOfAttributes = null
+    Config.ColumnTypes = []
+    Config.ValuesScopes = []
+    Config.NormalizationScope = []
+    Config.Ready = false
+}
+
+function loadConfigData(rawConfig) {
+    if (rawConfig.length <= 0)
+        throw new Error("Plik konfiguracyjny jest pusty!")
+
+    let charIndex = 0
+
+    //AttributesSeparator
+    for (let i = charIndex; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '"') {
+            i++
+            let attributesSeparator = ""
+            while (rawConfig.charAt(i) !== '"') {
+                attributesSeparator += rawConfig.charAt(i)
+                i++
+            }
+            Config.AttributesSeparator = attributesSeparator
+            i++
+            charIndex = i
+            if (Config.AttributesSeparator === '\\n' || Config.AttributesSeparator === '\\r' || Config.AttributesSeparator === '\\r\\n' || Config.AttributesSeparator === '\\n\\r') {
+                Config.AttributesSeparator = '\n'
+            }
+            break
+        }
+    }
+
+    //RowsSeparator
+    for (let i = charIndex; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '"') {
+            i++
+            let rowsSeparator = ""
+            while (rawConfig.charAt(i) !== '"') {
+                rowsSeparator += rawConfig.charAt(i)
+                i++
+            }
+            Config.RowsSeparator = rowsSeparator
+            i++
+            charIndex = i
+            if (Config.RowsSeparator === '\\n' || Config.RowsSeparator === '\\r' || Config.RowsSeparator === '\\r\\n' || Config.RowsSeparator === '\\n\\r') {
+                Config.RowsSeparator = '\n'
+            }
+            break
+        }
+    }
+
+    //MissingValuesSymbol
+    for (let i = charIndex; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '"') {
+            i++
+            let missingValuesSymbol = ""
+            while (rawConfig.charAt(i) !== '"') {
+                missingValuesSymbol += rawConfig.charAt(i)
+                i++
+            }
+            Config.MissingValuesSymbol = missingValuesSymbol
+            i++
+            charIndex = i
+            break
+        }
+    }
+
+    //NumberOfAttributes
+    for (let i = charIndex; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '"') {
+            i++
+            let numberOfAttributes = ""
+            while (rawConfig.charAt(i) !== '"') {
+                numberOfAttributes += rawConfig.charAt(i)
+                i++
+            }
+            Config.NumberOfAttributes = numberOfAttributes
+            i++
+            charIndex = i
+            break
+        }
+    }
+
+    //ColumnTypes
+    for (let i = charIndex, columnType = ""; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '"') {
+            do {
+                if (rawConfig.charAt(i) === '"') {
+                    i++
+                    columnType = ""
+                    while (rawConfig.charAt(i) !== '"' && i < rawConfig.length) {
+                        columnType += rawConfig.charAt(i)
+                        i++
+                    }
+                    Config.ColumnTypes.push(columnType)
+                }
+                i++
+                charIndex = i
+                if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                    break
+                }
+            } while (i < rawConfig.length)
+            break
+        }
+    }
+
+    //ValuesScopes
+    for (let i = charIndex, scopeArray = [], scopeValue = ""; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '[') {
+            do {
+                if (rawConfig.charAt(i) === '[') {
+                    i++
+                    scopeArray = []
+                    while (rawConfig.charAt(i) !== ']' && i < rawConfig.length) {
+
+                        do {
+                            if (rawConfig.charAt(i) === '"') {
+                                i++
+                                scopeValue = ""
+                                while (rawConfig.charAt(i) !== '"' && i < rawConfig.length) {
+                                    scopeValue += rawConfig.charAt(i)
+                                    i++
+                                }
+                                break
+                            }
+                            if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                                break
+                            }
+                            if(rawConfig.charAt(i) === ']') {
+                                break
+                            }
+                            i++
+                        } while (i < rawConfig.length)
+
+                        if(rawConfig.charAt(i) === ']') {
+                            break
+                        }
+                        scopeArray.push(scopeValue)
+                        i++
+                    }
+                    Config.ValuesScopes.push(scopeArray)
+                }
+                i++
+                charIndex = i
+                if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                    break
+                }
+            } while (i < rawConfig.length)
+            break
+        }
+    }
+
+    //NormalizationScope
+    for (let i = charIndex, normalizationValue = ""; i < rawConfig.length; i++) {
+        if (rawConfig.charAt(i) === '"') {
+            do {
+                if (rawConfig.charAt(i) === '"') {
+                    i++
+                    normalizationValue = ""
+                    while (rawConfig.charAt(i) !== '"' && i < rawConfig.length) {
+                        normalizationValue += rawConfig.charAt(i)
+                        i++
+                    }
+                    Config.NormalizationScope.push(normalizationValue)
+                }
+                i++
+                charIndex = i
+                if (rawConfig.charAt(i) === '\n' || rawConfig.charAt(i) === '\r') {
+                    break
+                }
+            } while (i < rawConfig.length)
+            break
+        }
+    }
+
+}
+
+function checkConfigIntegrity(configData) {
+
+    if(Config.AttributesSeparator.length <= 0 || Config.AttributesSeparator.length > 1) {
+        throw new Error("Niepoprawnie zdefiniowany separator atrybutów w pliku konfiguracyjnym. Musi to być pojedynczy znak lub \'\\n\'(znak nowej linii).")
+    }
+
+    if(Config.RowsSeparator.length <= 0 || Config.RowsSeparator.length > 1) {
+        throw new Error("Niepoprawnie zdefiniowany separator rekordów w pliku konfiguracyjnym. Musi to być pojedynczy znak lub \'\\n\'(znak nowej linii).")
+    }
+
+    if(Config.MissingValuesSymbol.length <= 0) {
+        alert("Ostrzeżenie: Nie zdefiniowano symbolu dla brakujących wartości. Może to doprowadzić do nieprawidłowego odczytu/przetwarzania danych.")
+    }
+
+    if(Config.NumberOfAttributes.length <= 0) {
+        alert("Ostrzeżenie: Nie zdefiniowano liczby atrybutów. Może to doprowadzić do nieprawidłowego działania programu.")
+    }
+    else if(!isAttributeInt(Config.NumberOfAttributes)) {
+        throw new Error("Niepoprawnie zdefiniowana liczba atrybutów w pliku konfiguracyjnym. Musi to być liczba całkowita.")
+    }
+    else {
+        Config.NumberOfAttributes = parseInt(Config.NumberOfAttributes)
+    }
+
+    if(Config.ColumnTypes.length !== Config.NumberOfAttributes) {
+        throw new Error("Ilość zdefiniowanych typów atrybutów w pliku konfiguracyjnym jest niezgodna z liczbą atrybutów podaną wcześniej.")
+    }
+    for(let i = 0; i < Config.ColumnTypes.length; i++) {
+        if(Config.ColumnTypes[i] === "int") {
+
+        }
+        else if(Config.ColumnTypes[i] === "float") {
+
+        }
+        else if(Config.ColumnTypes[i] === "symbol") {
+
+        }
+        else if(Config.ColumnTypes[i] === "decision") {
+
+        }
+        else {
+            throw new Error(`Zdefiniowano nieprawidłowy typ atrybutu w ${i+1} komórce.
+                Program nie rozpoznaje typu "${Config.ColumnTypes[i]}"`)
+        }
+    }
+
+    if(Config.ValuesScopes.length !== Config.NumberOfAttributes) {
+        throw new Error("Ilość zdefiniowanych zakresów wartości atrybutów w pliku konfiguracyjnym jest niezgodna z liczbą atrybutów podaną wcześniej.")
+    }
+    for(let i = 0; i < Config.ValuesScopes.length; i++) {
+        if(Config.ColumnTypes[i] === "int") {
+            if(Config.ValuesScopes[i].length !== 2) {
+                throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla atrybutów liczbowych zakres powinny stanowić dwie liczby(min i max).`)
+            }
+            else if(!isAttributeInt(Config.ValuesScopes[i][0])) {
+                throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu int zakres powinny stanowić tylko liczby całkowite.`)
+            }
+            else if(!isAttributeInt(Config.ValuesScopes[i][1])) {
+                throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu int zakres powinny stanowić tylko liczby całkowite.`)
+            }
+            else {
+                Config.ValuesScopes[i][0] = parseInt(Config.ValuesScopes[i][0])
+                Config.ValuesScopes[i][1] = parseInt(Config.ValuesScopes[i][1])
+            }
+        }
+
+        else if(Config.ColumnTypes[i] === "float") {
+            if(Config.ValuesScopes[i].length !== 2) {
+                throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla atrybutów liczbowych zakres powinny stanowić dwie liczby(min i max).`)
+            }
+            else if(!isAttributeFloat(Config.ValuesScopes[i][0])) {
+                throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu float zakres powinny stanowić tylko liczby rzeczywiste.`)
+            }
+            else if(!isAttributeFloat(Config.ValuesScopes[i][1])) {
+                throw new Error(`${i+1} atrybut nie ma właściwie zdefiniowanego zakresu. Dla typu float zakres powinny stanowić tylko liczby rzeczywiste.`)
+            }
+            else {
+                Config.ValuesScopes[i][0] = parseFloat(Config.ValuesScopes[i][0])
+                Config.ValuesScopes[i][1] = parseFloat(Config.ValuesScopes[i][1])
+            }
+        }
+    }
+
+    if(Config.NormalizationScope.length !== 3) {
+        throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+    }
+    else if(!isAttributeFloat(Config.NormalizationScope[0])) {
+        throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+    }
+    else if(!isAttributeFloat(Config.NormalizationScope[1])) {
+        throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+    }
+    else if(!isAttributeInt(Config.NormalizationScope[2])) {
+        throw new Error("Niepoprawnie zdefiniowany zakres normalizacji. Wymagane jest podanie 3 liczb(min, max, ilość miejsc po przecinku), przy czym ostatnia powinna być liczbą całkowitą.")
+    }
+    else {
+        Config.NormalizationScope[0] = parseFloat(Config.NormalizationScope[0])
+        Config.NormalizationScope[1] = parseFloat(Config.NormalizationScope[1])
+        Config.NormalizationScope[2] = parseInt(Config.NormalizationScope[2])
+    }
+}
+
+function processDataFileContent(rawFileContent) {
+    try {
+        if(Config.Ready === false)
+            throw new Error("Plik konfiguracyjny nie został załadowany!")
+
+        const dataSet = createDataSet(rawFileContent)
+        checkDataSetIntegrity(dataSet)
+
+        MainDataSet = dataSet
+        displayDataSet(dataSet)
+    }
+    catch (e) {
+        alert(`Błąd: ${e.message}`)
+        document.getElementById('board').innerText = ""
+        throw new Error(`${e.message}`)
+    }
+}
+
+function processDataFileNormalization(rawFileContent) {
+    try {
+        if(Config.Ready === false)
+            throw new Error("Plik konfiguracyjny nie został załadowany!")
+
+        const dataSet = createDataSet(rawFileContent)
+        checkDataSetIntegrity(dataSet)
+        const normalizedDataSet = normalizeDataSet(dataSet)
+
+        MainDataSet = normalizedDataSet
+        displayDataSet(normalizedDataSet)
+    }
+    catch (e) {
+        alert(`Błąd: ${e.message}`)
+        document.getElementById('board').innerText = ""
+        throw new Error(`${e.message}`)
+    }
+}
+
+function createDataSet(rawData) {
+    if(rawData.length <= 0)
+        throw new Error("Plik z danymi jest pusty!")
+
+    const lines = separateLines(rawData)
+    const dataSet = separateAttributes(lines)
+
+    return dataSet
+}
+
+function separateLines(rawData) {
+    let lines = []
+    if(Config.RowsSeparator === '\n' || Config.RowsSeparator === '\r') {
+        for (let i = 0, startNewLineIndex = 0; i < rawData.length; i++) {
+            if (rawData.charAt(i) === '\n' || rawData.charAt(i) === '\r') {
+                lines.push(rawData.substring(startNewLineIndex, i))
+                if (rawData.charAt(i+1) === '\n' || rawData.charAt(i+1) === '\r')
+                    i++
+                startNewLineIndex = i + 1
+            }
+        }
+    }
+    else {
+        for (let i = 0, startNewLineIndex = 0; i < rawData.length; i++) {
+            if (rawData.charAt(i) === Config.RowsSeparator) {
+                lines.push(rawData.substring(startNewLineIndex, i))
+                startNewLineIndex = i + 1
+            }
+        }
+    }
+
+    if(lines.length <= 0)
+        throw new Error("Nie udało się wydzielić ani jednego rekordu! Pamiętaj, że rekordy muszą być zakończone separatorem rekordów zdefiniowanym w pliku konfiguracyjnym.")
+
+    return lines
+}
+
+function separateAttributes(dataLines) {
+    let dataSet = []
+    for (let i = 0; i < dataLines.length; i++) {
+        let dataRow = []
+        for (let j = 0, k = 0; j < dataLines[i].length; j++) {
+            if (dataLines[i].charAt(j) === Config.AttributesSeparator) {
+                k++
+                continue
+            }
+            if (dataRow[k]) {
+                dataRow[k] += dataLines[i].charAt(j)
+            } else {
+                dataRow[k] = dataLines[i].charAt(j)
+            }
+        }
+        if(dataRow.length > 0)
+            dataSet.push(dataRow)
+    }
+    if(dataSet.length <= 0)
+        throw new Error("Nie udało się wydzielić ani jednego rekordu! Pamiętaj, że separator atrybutów jest symbolem pomijanym w trakcie odczytywania danych, możesz go zdefiniować w pliku konfiguracyjnym.")
+
+    return dataSet
+}
+
+function checkDataSetIntegrity(dataSet) {
+    checkNumberOfAttributes(dataSet)
+    validateAttributesTypes(dataSet)
+    validateValuesScopes(dataSet)
+}
+
+function checkNumberOfAttributes(dataSet) {
+    for(let i = 0; i < dataSet.length; i++) {
+        if(dataSet[i].length !== Config.NumberOfAttributes)
+            throw new Error(`Liczba atrybutów w rekordzie ${i+1} jest nieprawidłowa!`)
+    }
+}
+
+function validateAttributesTypes(dataSet) {
+    for(let i = 0; i < dataSet.length; i++) {
+        for(let j = 0; j < dataSet[i].length; j++) {
+            if(dataSet[i][j] === Config.MissingValuesSymbol) {
+
+            }
+            else if(Config.ColumnTypes[j] === "float" && isAttributeFloat(dataSet[i][j])) {
+                dataSet[i][j] = parseFloat(dataSet[i][j])
+            }
+            else if(Config.ColumnTypes[j] === "int" && isAttributeInt(dataSet[i][j])) {
+                dataSet[i][j] = parseInt(dataSet[i][j])
+            }
+            else if(Config.ColumnTypes[j] === "symbol" || Config.ColumnTypes[j] === "decision") {
+
+            }
+            else {
+                throw new Error(`Niewłaściwy typ atrybutu ${j+1} w rekordzie ${i+1}`)
+            }
+        }
+    }
+}
+
+function isAttributeFloat(attribute) {
+    return (!isNaN(attribute) && !isNaN(parseFloat(attribute)))
+}
+
+function isAttributeInt(attribute) {
+    return (!isNaN(attribute) && !isNaN(parseInt(attribute)) && Number.isInteger(parseFloat(attribute)))
+}
+
+function validateValuesScopes(dataSet) {
+    for(let i = 0; i < dataSet.length; i++) {
+        for(let j = 0; j < dataSet[i].length; j++) {
+            if(dataSet[i][j] === Config.MissingValuesSymbol) {
+
+            }
+            else if(typeof dataSet[i][j] === "number") {
+                if(dataSet[i][j] < Config.ValuesScopes[j][0] || dataSet[i][j] > Config.ValuesScopes[j][1])
+                    throw new Error(`Wartość atrybutu ${j+1} w rekordzie ${i+1} nie mieści się w podanym zakresie!`)
+            }
+            else if(typeof dataSet[i][j] === "string") {
+                let valueDetected = 0
+                for(let k = 0; k < Config.ValuesScopes[j].length; k++) {
+                    if(dataSet[i][j] === Config.ValuesScopes[j][k]) {
+                        valueDetected = 1
+                        break
+                    }
+                }
+                if(!valueDetected) {
+                    throw new Error(`Wartość atrybutu ${j+1} w rekordzie ${i+1} nie mieści się w podanym zakresie!`)
+                }
+            }
+            else {
+                throw new Error(`Atrybut ${j+1} w rekordzie ${i+1} spowodował nieoczekiwany błąd w trakcie walidacji zakresu!`)
+            }
+        }
+    }
+}
+
+function normalizeDataSet(dataSet) {
+    let normalizedDataSet = []
+    for(let i = 0; i < dataSet.length; i++) {
+        normalizedDataSet.push(dataSet[i].slice(0))
+    }
+    normalizeNumbers(normalizedDataSet)
+    normalizeSymbols(normalizedDataSet)
+
+    return normalizedDataSet
+}
+
+function normalizeNumbers(normalizedDataSet) {
+    for(let i = 0; i < Config.ColumnTypes.length; i++) {
+        if (Config.ColumnTypes[i] === "float" || Config.ColumnTypes[i] === "int") {
+            for (let j = 0; j < normalizedDataSet.length; j++) {
+                if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                    alert("Ostrzeżenie: Wykryto brakujące wartości typu liczbowego! W procesie normalizacji zostaną one zamienione na medianę.")
+                    i = Config.ColumnTypes.length
+                    break;
+                }
+            }
+        }
+    }
+
+    let sortedValues
+    for(let icol = 0; icol < Config.ColumnTypes.length; icol++) {
+        if(Config.ColumnTypes[icol] === "float" || Config.ColumnTypes[icol] === "int") {
+            sortedValues = []
+            for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                if(normalizedDataSet[irow][icol] === Config.MissingValuesSymbol) {
+                    continue
+                }
+                sortedValues.push(normalizedDataSet[irow][icol])
+            }
+            sortedValues.sort(function(a, b){return a-b})
+            for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                if(normalizedDataSet[irow][icol] === Config.MissingValuesSymbol) {
+                    normalizedDataSet[irow][icol] = sortedValues[parseInt((sortedValues.length - 1) / 2)]
+                }
+            }
+            for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol]-Config.ValuesScopes[icol][0]) / (Config.ValuesScopes[icol][1]-Config.ValuesScopes[icol][0])    //wzór na nrmalizację numeryczną w zakresie 0:1
+                normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol] * (Config.NormalizationScope[1] - Config.NormalizationScope[0])) + Config.NormalizationScope[0] //dodatkowy wzór przekształacający normalizację 0:1 do podanego zakresu
+
+                let roundNumber = 1
+                if(Config.NormalizationScope[2] > 0) {
+                    for(let i = 0; i < Config.NormalizationScope[2]; i++)
+                        roundNumber *= 10
+                }
+                normalizedDataSet[irow][icol] = Math.round((normalizedDataSet[irow][icol] + Number.EPSILON) * roundNumber) / roundNumber
+            }
+        }
+    }
+}
+
+function normalizeSymbols(normalizedDataSet) {
+    //wykryj brakujące wartości
+    for(let i = 0; i < Config.ColumnTypes.length; i++) {
+        if (Config.ColumnTypes[i] === "symbol") {
+            for (let j = 0; j < normalizedDataSet.length; j++) {
+                if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                    alert("Ostrzeżenie: Wykryto brakujące wartości typu symbol! W procesie normalizacji zostaną one zamienione na wartości występujące najczęściej.")
+                    i = Config.ColumnTypes.length
+                    break;
+                }
+            }
+        }
+    }
+
+    //uzupełnij brakujące wartości
+    let columnArray = []
+    let mostFrequentItem
+    for(let i = 0; i < Config.ColumnTypes.length; i++) {
+        if (Config.ColumnTypes[i] === "symbol") {
+            for (let j = 0; j < normalizedDataSet.length; j++) {
+                if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                    continue
+                }
+                columnArray.push(normalizedDataSet[j][i])
+            }
+            mostFrequentItem = findMostFrequentItemInArray(columnArray)
+            for (let j = 0; j < normalizedDataSet.length; j++) {
+                if(normalizedDataSet[j][i] === Config.MissingValuesSymbol) {
+                    normalizedDataSet[j][i] = mostFrequentItem
+                }
+            }
+        }
+        columnArray = []
+    }
+
+    //zamień wszystkie wartości na liczby
+    for(let i = 0; i < Config.ColumnTypes.length; i++) {
+        if (Config.ColumnTypes[i] === "symbol") {
+            for (let j = 0; j < Config.ValuesScopes[i].length; j++) {
+                for(let k = 0; k < normalizedDataSet.length; k++) {
+                    if(normalizedDataSet[k][i] === Config.ValuesScopes[i][j]) {
+                        normalizedDataSet[k][i] = j
+                    }
+                }
+            }
+        }
+    }
+
+    //znormalizuj wartości
+    let maxValue
+    let minValue
+    for(let icol = 0; icol < Config.ColumnTypes.length; icol++) {
+        if (Config.ColumnTypes[icol] === "symbol") {
+            minValue = 0
+            maxValue = Config.ValuesScopes[icol].length - 1
+            for(let irow = 0; irow < normalizedDataSet.length; irow++) {
+                normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol]-minValue) / (maxValue-minValue)    //wzór na nrmalizację numeryczną w zakresie 0:1
+                normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol] * (Config.NormalizationScope[1] - Config.NormalizationScope[0])) + Config.NormalizationScope[0] //dodatkowy wzór przekształacający normalizację 0:1 do podanego zakresu
+
+                let roundNumber = 1
+                if(Config.NormalizationScope[2] > 0) {
+                    for(let i = 0; i < Config.NormalizationScope[2]; i++)
+                        roundNumber *= 10
+                }
+                normalizedDataSet[irow][icol] = Math.round((normalizedDataSet[irow][icol] + Number.EPSILON) * roundNumber) / roundNumber
+            }
+        }
+    }
+}
+
+function findMostFrequentItemInArray(arr){
+    let newArray = arr.slice()
+
+    return newArray.sort((a,b) =>
+        newArray.filter(v => v===a).length
+        - newArray.filter(v => v===b).length
+    ).pop();
+}

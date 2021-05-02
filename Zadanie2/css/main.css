@@ -30,7 +30,7 @@ body {
     border-radius: 1px;
 }
 
-.upload-data input {
+.upload-data input, textarea {
     font-size: 26px;
     font-weight: bold;
     cursor: pointer;

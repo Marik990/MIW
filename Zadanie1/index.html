@@ -584,8 +584,6 @@
         }
 
         let sortedValues
-        let maxValue
-        let minValue
         for(let icol = 0; icol < Config.ColumnTypes.length; icol++) {
             if(Config.ColumnTypes[icol] === "float" || Config.ColumnTypes[icol] === "int") {
                 sortedValues = []
@@ -601,10 +599,8 @@
                         normalizedDataSet[irow][icol] = sortedValues[parseInt((sortedValues.length - 1) / 2)]
                     }
                 }
-                minValue = sortedValues[0]
-                maxValue = sortedValues[sortedValues.length - 1]
                 for(let irow = 0; irow < normalizedDataSet.length; irow++) {
-                        normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol]-minValue) / (maxValue-minValue)    //wzór na nrmalizację numeryczną w zakresie 0:1
+                        normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol]-Config.ValuesScopes[icol][0]) / (Config.ValuesScopes[icol][1]-Config.ValuesScopes[icol][0])    //wzór na nrmalizację numeryczną w zakresie 0:1
                         normalizedDataSet[irow][icol] = (normalizedDataSet[irow][icol] * (Config.NormalizationScope[1] - Config.NormalizationScope[0])) + Config.NormalizationScope[0] //dodatkowy wzór przekształacający normalizację 0:1 do podanego zakresu
 
                         let roundNumber = 1
