@@ -70,17 +70,33 @@
 </main>
 
 <script>
+    
+    function beginClassification1(rawTrainingSamples) {
+        let normalizedDatasetTrainingSamples = []
 
-    $('#classification1-btn').on('click',function () {
-        let datasetTrainingSamples = readDataFile(document.getElementById('data-file'))
-        //zmienić flow programu
-        //tu wypadałoby stworzyć, sprawdzić i znormalizować dataset z próbkami, a następnie wysłać gotowy dataset do funkcji klasyfikującej razem z resztą danych
+        try {
+            if(Config.Ready === false)
+                throw new Error("Plik konfiguracyjny nie został załadowany!")
+
+            const datasetTrainingSamples = createDataSet(rawTrainingSamples)
+            checkDataSetIntegrity(datasetTrainingSamples)
+            normalizedDatasetTrainingSamples = normalizeDataSet(datasetTrainingSamples)
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie wczytywania próbek wzorcowych: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+
+        //pobrać, stworzyć, sprawdzić i znormalizować obiekt testowy
+        //pobrać nazwę metryki
+        //pobrać parametr k
         classifyObjectKnnFirstMethod()
-    })
+    }
 
-    $('#classification2-btn').on('click',function () {
-        let datasetTrainingSamples = readDataFile(document.getElementById('data-file'))
-    })
+    function beginClassification2(rawTrainingSamples) {
+
+    }
 
     function classifyObjectKnnFirstMethod() {
         let assignedClass

@@ -1,14 +1,16 @@
 document.getElementById('upload-data-form').reset()
 document.getElementById('upload-config-form').reset()
 
-$('#back-btn').on("click",function(){
-    $('html,body').animate({
-        scrollTop: 0
-    }, 'slow');
-});
-
 $('#upload-config-btn').on('click',function () {
     readConfigFile(document.getElementById('config-file'))
+})
+
+$('#classification1-btn').on('click',function () {
+    readDataFileClassification1(document.getElementById('data-file'))
+})
+
+$('#classification2-btn').on('click',function () {
+    readDataFileClassification2(document.getElementById('data-file'))
 })
 
 $('#save-txt-btn').on('click',function () {
@@ -25,6 +27,12 @@ $('#save-json-btn').on('click',function () {
     let dataset = JSON.stringify(MainDataSet)
     downloadToFile(dataset, 'dataset.json', 'text/plain')
 })
+
+$('#back-btn').on("click",function(){
+    $('html,body').animate({
+        scrollTop: 0
+    }, 'slow');
+});
 
 function displayDataSet(dataSet) {
     let html = "<table cellspacing='0'>"
@@ -51,7 +59,7 @@ function displayDataSet(dataSet) {
     }, 'slow');
 }
 
-function readDataFile(filePath) {
+function readDataFileClassification1(filePath) {
     try {
         if (checkFileAPI() === false)
             return false
@@ -60,7 +68,7 @@ function readDataFile(filePath) {
         if (filePath.files && filePath.files[0]) {
             reader.onload = function (e) {
                 output = e.target.result;
-                return output;
+                beginClassification1(output);
             };//end onload()
             reader.readAsText(filePath.files[0]);
         }//end if html5 filelist support
@@ -70,7 +78,7 @@ function readDataFile(filePath) {
                 let file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
                 output = file.ReadAll(); //text contents of file
                 file.Close(); //close file "input stream"
-                return output;
+                beginClassification1(output);
             } catch (e) {
                 if (e.number == -2146827859) {
                     alert('Unable to access local files due to browser security settings. ' +
@@ -83,7 +91,45 @@ function readDataFile(filePath) {
         }
     }
     catch (e) {
-        alert(`Błąd: Nie można załadować pliku z danymi!`)
+        alert(`Wystąpił błąd w trakcie wczytywania próbek wzorcowych: Nie można załadować pliku z próbkami wzorcowymi!`)
+        throw new Error(`${e.message}`)
+    }
+    return true;
+}
+
+function readDataFileClassification2(filePath) {
+    try {
+        if (checkFileAPI() === false)
+            return false
+        let reader = new FileReader()
+        let output = ""
+        if (filePath.files && filePath.files[0]) {
+            reader.onload = function (e) {
+                output = e.target.result;
+                beginClassification2(output);
+            };//end onload()
+            reader.readAsText(filePath.files[0]);
+        }//end if html5 filelist support
+        else if (ActiveXObject && filePath) { //fallback to IE 6-8 support via ActiveX
+            try {
+                reader = new ActiveXObject("Scripting.FileSystemObject");
+                let file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
+                output = file.ReadAll(); //text contents of file
+                file.Close(); //close file "input stream"
+                beginClassification2(output);
+            } catch (e) {
+                if (e.number == -2146827859) {
+                    alert('Unable to access local files due to browser security settings. ' +
+                        'To overcome this, go to Tools->Internet Options->Security->Custom Level. ' +
+                        'Find the setting for "Initialize and script ActiveX controls not marked as safe" and change it to "Enable" or "Prompt"');
+                }
+            }
+        } else { //this is where you could fallback to Java Applet, Flash or similar
+            return false;
+        }
+    }
+    catch (e) {
+        alert(`Wystąpił błąd w trakcie wczytywania próbek wzorcowych: Nie można załadować pliku z próbkami wzorcowymi!`)
         throw new Error(`${e.message}`)
     }
     return true;
@@ -121,7 +167,7 @@ function readConfigFile(filePath) {
         }
     }
     catch (e) {
-        alert(`Błąd: Nie można załadować pliku konfiguracyjnego!`)
+        alert(`Błąd pliku konfiguracyjnego: Nie można załadować pliku konfiguracyjnego!`)
         throw new Error(`${e.message}`)
     }
     return true;

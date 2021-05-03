@@ -31,7 +31,7 @@ function processConfigFile(rawConfig) {
         alert("Plik konfiguracyjny załadowany poprawnie.")
     }
     catch (e) {
-        alert(`Błąd: ${e.message}`)
+        alert(`Błąd pliku konfiguracyjnego: ${e.message}`)
         Config.Ready = false
         document.getElementById('upload-config-form').reset()
         throw new Error(`${e.message}`)
