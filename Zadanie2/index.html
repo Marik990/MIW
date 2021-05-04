@@ -13,7 +13,7 @@
 </head>
 <body>
 <header>
-    <div class="title">Zadanie 2</div>
+    <div class="title">Zadanie 2 - knn</div>
 </header>
 <main>
     <article>
@@ -73,6 +73,10 @@
     
     function beginClassification1(rawTrainingSamples) {
         let normalizedDatasetTrainingSamples = []
+        let normalizedTestObject = []
+        let parameterK = null
+        let metricsName = ""
+        let resultClass = ""
 
         try {
             if(Config.Ready === false)
@@ -87,27 +91,242 @@
             throw new Error(`${e.message}`)
         }
 
+        try {
+            const rawTestObject = document.getElementById('test-object').value + Config.AttributesSeparator + Config.MissingValuesSymbol + Config.RowsSeparator
+            if(rawTestObject === Config.AttributesSeparator + Config.MissingValuesSymbol + Config.RowsSeparator)
+                throw new Error("Nie podano atrybutów obiektu testowego!")
 
-        //pobrać, stworzyć, sprawdzić i znormalizować obiekt testowy
-        //pobrać nazwę metryki
-        //pobrać parametr k
-        classifyObjectKnnFirstMethod()
+            const datasetTestObject = createDataSet(rawTestObject)
+            checkDataSetIntegrity(datasetTestObject)
+            normalizedTestObject = normalizeDataSet(datasetTestObject)
+            normalizedTestObject = normalizedTestObject[0]
+            normalizedTestObject.pop()
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie wczytywania obiektu testowego: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            metricsName = document.getElementById("metryka").value
+            parameterK = document.getElementById("parametrK").value
+            if(metricsName.length <= 0) {
+                throw new Error("nie podano metryki")
+            }
+            if(parameterK.length <= 0) {
+                throw new Error("nie podano parametru K")
+            }
+            if(!isAttributeInt(parameterK)) {
+                throw new Error("parametr K nie jest liczbą całkowitą")
+            }
+            else {
+                parameterK = parseInt(parameterK)
+            }
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie wczytywania parametrów: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            resultClass = classifyObjectKnnFirstMethod(normalizedDatasetTrainingSamples, normalizedTestObject, parameterK, metricsName)
+            document.getElementById("board").innerText = "k-nn nadał obiektowi klasę: " + resultClass
+            $('html,body').animate({
+                scrollTop: $(`#board`).offset().top
+            }, 'slow');
+        }
+       catch (e) {
+            alert(`Wystąpił błąd w trakcie klasyfikacji: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
     }
 
     function beginClassification2(rawTrainingSamples) {
+        let normalizedDatasetTrainingSamples = []
+        let normalizedTestObject = []
+        let parameterK = null
+        let metricsName = ""
+        let resultClass = ""
 
+        try {
+            if(Config.Ready === false)
+                throw new Error("Plik konfiguracyjny nie został załadowany!")
+
+            const datasetTrainingSamples = createDataSet(rawTrainingSamples)
+            checkDataSetIntegrity(datasetTrainingSamples)
+            normalizedDatasetTrainingSamples = normalizeDataSet(datasetTrainingSamples)
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie wczytywania próbek wzorcowych: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            const rawTestObject = document.getElementById('test-object').value + Config.AttributesSeparator + Config.MissingValuesSymbol + Config.RowsSeparator
+            if(rawTestObject === Config.AttributesSeparator + Config.MissingValuesSymbol + Config.RowsSeparator)
+                throw new Error("Nie podano atrybutów obiektu testowego!")
+
+            const datasetTestObject = createDataSet(rawTestObject)
+            checkDataSetIntegrity(datasetTestObject)
+            normalizedTestObject = normalizeDataSet(datasetTestObject)
+            normalizedTestObject = normalizedTestObject[0]
+            normalizedTestObject.pop()
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie wczytywania obiektu testowego: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            metricsName = document.getElementById("metryka").value
+            parameterK = document.getElementById("parametrK").value
+            if(metricsName.length <= 0) {
+                throw new Error("nie podano metryki")
+            }
+            if(parameterK.length <= 0) {
+                throw new Error("nie podano parametru K")
+            }
+            if(!isAttributeInt(parameterK)) {
+                throw new Error("parametr K nie jest liczbą całkowitą")
+            }
+            else {
+                parameterK = parseInt(parameterK)
+            }
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie wczytywania parametrów: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            resultClass = classifyObjectKnnSecondMethod(normalizedDatasetTrainingSamples, normalizedTestObject, parameterK, metricsName)
+            document.getElementById("board").innerText = "k-nn nadał obiektowi klasę: " + resultClass
+            $('html,body').animate({
+                scrollTop: $(`#board`).offset().top
+            }, 'slow');
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie klasyfikacji: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
     }
 
-    function classifyObjectKnnFirstMethod() {
-        let assignedClass
+    function classifyObjectKnnFirstMethod(datasetTrainingSamples, testObject, parameterK, metricsName) {
+        parameterK = parseInt(parameterK)
+        if(parameterK < 1) {
+            throw new Error("parametr K jest zbyt mały!")
+        }
+        if(parameterK > datasetTrainingSamples.length) {
+            throw new Error("parametr K jest zbyt duży!")
+        }
+        if(parameterK % 2 === 0) {
+            throw new Error("parametr K jest liczbą parzystą!")
+        }
+
+        let assignedClass = null
+        let datasetDistance = []
+        let distance = []
+        let sample = []
+        let knnClasses = []
+
+        switch (metricsName) {
+            case 'euklides':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricEuclides(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            default:
+                throw new Error("nieznana metryka")
+        }
+
+        datasetDistance.sort(sortTwoDimensionalArrayFirstColumn)
+        for(let i = 0; i < parameterK; i++) {
+            knnClasses.push(datasetDistance[i][1])
+        }
+        assignedClass = findMostFrequentItemInArray(knnClasses)
 
         return assignedClass
     }
 
-    function classifyObjectKnnSecondMethod() {
-        let assignedClass
+    function classifyObjectKnnSecondMethod(datasetTrainingSamples, testObject, parameterK, metricsName) {
+        parameterK = parseInt(parameterK)
+        if(parameterK < 1) {
+            throw new Error("parametr K jest zbyt mały!")
+        }
+
+        let assignedClass = null
+        let datasetDistance = []
+        let distance = []
+        let sample = []
+        let sampleClasses = []
+        let knnClasses = []
+
+        switch (metricsName) {
+            case 'euklides':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricEuclides(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            default:
+                throw new Error("nieznana metryka")
+        }
+
+        datasetDistance.sort(sortTwoDimensionalArrayFirstColumn)
+        for(let i = 0; i < datasetDistance.length; i++) {
+            if(!sampleClasses.includes(datasetDistance[i][1])) {
+                sampleClasses.push(datasetDistance[i][1])
+            }
+        }
+        console.log(sampleClasses)
+        for(let iclass = 0, k = 0; iclass < sampleClasses.length; iclass++) {
+            knnClasses.push([0, sampleClasses[iclass]])
+            for(let idist = 0; idist < datasetDistance.length && k < parameterK; idist++) {
+                if(datasetDistance[idist][1] === knnClasses[iclass][1]) {
+                    knnClasses[iclass][0] += datasetDistance[idist][0]
+                    k++
+                }
+            }
+            if(k < parameterK) {
+                throw new Error("parametr K jest zbyt duży!")
+            }
+            k=0
+        }
+        knnClasses.sort(sortTwoDimensionalArrayFirstColumn)
+        console.log(knnClasses)
+        assignedClass = knnClasses[0][1]
 
         return assignedClass
+    }
+
+    function metricEuclides(object1, object2) {
+        let sigma = 0
+        for(let i = 0; i < object1.length && i < object2.length; i++) {
+            sigma += Math.pow(object1[i] - object2[i], 2)
+        }
+        return Math.sqrt(sigma)
+    }
+
+    function sortTwoDimensionalArrayFirstColumn(a, b) {
+        if (a[0] === b[0]) {
+            return 0;
+        }
+        else {
+            return (a[0] < b[0]) ? -1 : 1;
+        }
     }
 
     /*
