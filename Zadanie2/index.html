@@ -59,12 +59,6 @@
             <div class="save-btn" id="save-txt-btn">
                 <button>Zapisz jako txt</button>
             </div>
-            <div class="save-btn" id="save-html-btn">
-                <button>Zapisz jako HTML</button>
-            </div>
-            <div class="save-btn" id="save-json-btn">
-                <button>Zapisz jako JSON</button>
-            </div>
         </div>
     </article>
 </main>
@@ -256,12 +250,65 @@
         let classesCounter = []
 
         switch (metricsName) {
+            case 'manhattan':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricManhattan(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
             case 'euklides':
                 for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
                     for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
                         sample.push(datasetTrainingSamples[irow][icol])
                     }
                     distance.push(metricEuclides(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            case 'czebyszew':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricChebyshev(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            case 'minkowski':
+                let parameterP
+                while((parameterP = prompt("Podaj parametr p:")) <= 0 || isNaN(parseInt(parameterP))) {
+
+                }
+                parameterP = parseInt(parameterP)
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricMinkowski(sample, testObject, parameterP))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            case 'logarytm':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricLogarithm(sample, testObject))
                     distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
                     datasetDistance.push(distance)
                     distance = []
@@ -280,7 +327,6 @@
                 classesCounter.push([0, datasetDistance[i][1]])
             }
         }
-        console.log(sampleClasses)
         for(let i = 0; i < parameterK; i++) {
             knnClasses.push(datasetDistance[i][1])
         }
@@ -297,8 +343,6 @@
             assignedClass = classesCounter[classesCounter.length - 1][1]
         }
 
-
-        console.log(classesCounter)
         return assignedClass
     }
 
@@ -316,12 +360,65 @@
         let knnClasses = []
 
         switch (metricsName) {
+            case 'manhattan':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricManhattan(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
             case 'euklides':
                 for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
                     for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
                         sample.push(datasetTrainingSamples[irow][icol])
                     }
                     distance.push(metricEuclides(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            case 'czebyszew':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricChebyshev(sample, testObject))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            case 'minkowski':
+                let parameterP
+                while((parameterP = prompt("Podaj parametr p:")) <= 0 || isNaN(parseInt(parameterP))) {
+
+                }
+                parameterP = parseInt(parameterP)
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricMinkowski(sample, testObject, parameterP))
+                    distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
+                    datasetDistance.push(distance)
+                    distance = []
+                    sample = []
+                }
+                break;
+            case 'logarytm':
+                for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
+                    for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
+                        sample.push(datasetTrainingSamples[irow][icol])
+                    }
+                    distance.push(metricLogarithm(sample, testObject))
                     distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
                     datasetDistance.push(distance)
                     distance = []
@@ -403,14 +500,6 @@
                                                           `
     }
 
-    function metricEuclides(object1, object2) {
-        let sigma = 0
-        for(let i = 0; i < object1.length && i < object2.length; i++) {
-            sigma += Math.pow(object1[i] - object2[i], 2)
-        }
-        return Math.sqrt(sigma)
-    }
-
     function sortTwoDimensionalArrayFirstColumn(a, b) {
         if (a[0] === b[0]) {
             return 0;
@@ -418,6 +507,51 @@
         else {
             return (a[0] < b[0]) ? -1 : 1;
         }
+    }
+
+    function metricManhattan(object1, object2) {
+        let sigma = 0
+        for(let i = 0; i < object1.length && i < object2.length; i++) {
+            sigma += Math.abs(object1[i] - object2[i])
+        }
+
+        return sigma
+    }
+
+    function metricEuclides(object1, object2) {
+        let sigma = 0
+        for(let i = 0; i < object1.length && i < object2.length; i++) {
+            sigma += Math.pow(object1[i] - object2[i], 2)
+        }
+
+        return Math.sqrt(sigma)
+    }
+    
+    function metricChebyshev(object1, object2) {
+        let differences = []
+        for(let i = 0; i < object1.length && i < object2.length; i++) {
+            differences.push(Math.abs(object1[i] - object2[i]))
+        }
+
+        return Math.max(...differences)
+    }
+    
+    function metricMinkowski(object1, object2, parameterP) {
+        let sigma = 0
+        for(let i = 0; i < object1.length && i < object2.length; i++) {
+            sigma += Math.pow(Math.abs(object1[i] - object2[i]), parameterP)
+        }
+
+        return Math.pow(sigma, 1 / parameterP)
+    }
+    
+    function metricLogarithm (object1, object2) {
+        let sigma = 0
+        for(let i = 0; i < object1.length && i < object2.length; i++) {
+            sigma += Math.abs(Math.log10(object1[i]) - Math.log10(object2[i]))
+        }
+
+        return sigma
     }
 
     /*
@@ -464,7 +598,7 @@ Flow programu:
         -wyświetl sklasyfikowany obiekt
 
     Dolny panel:
-        -po staremu(chociaż JSONa można przerobić, żeby zapisywał sam obiekt)
+        -po staremu
      */
 </script>
 
