@@ -1,5 +1,5 @@
-document.getElementById('upload-data-form').reset()
-document.getElementById('upload-config-form').reset()
+//document.getElementById('upload-data-form').reset()
+//document.getElementById('upload-config-form').reset()
 
 $('#upload-config-btn').on('click',function () {
     readConfigFile(document.getElementById('config-file'))

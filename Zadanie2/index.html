@@ -13,7 +13,7 @@
 </head>
 <body>
 <header>
-    <div class="title">Zadanie 2 - knn</div>
+    <div class="title">Zadanie 2 - knn i 1vsReszta</div>
 </header>
 <main>
     <article>
@@ -130,13 +130,26 @@
 
         try {
             resultClass = classifyObjectKnnFirstMethod(normalizedDatasetTrainingSamples, normalizedTestObject, parameterK, metricsName)
-            document.getElementById("board").innerText = "k-nn nadał obiektowi klasę: " + resultClass
+            if(resultClass !== null) {
+                document.getElementById("board").innerText = "k-nn nadał obiektowi klasę: " + resultClass
+            }
+            else {
+                document.getElementById("board").innerText = "k-nn nie był w stanie nadać klasy podanemu obiektowi"
+            }
             $('html,body').animate({
                 scrollTop: $(`#board`).offset().top
             }, 'slow');
         }
        catch (e) {
             alert(`Wystąpił błąd w trakcie klasyfikacji: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            oneVsRest(normalizedDatasetTrainingSamples, parameterK, metricsName, "first")
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie walidacji klasyfikatora: ${e.message}`)
             throw new Error(`${e.message}`)
         }
     }
@@ -200,6 +213,12 @@
 
         try {
             resultClass = classifyObjectKnnSecondMethod(normalizedDatasetTrainingSamples, normalizedTestObject, parameterK, metricsName)
+            if(resultClass !== null) {
+                document.getElementById("board").innerText = "k-nn nadał obiektowi klasę: " + resultClass
+            }
+            else {
+                document.getElementById("board").innerText = "k-nn nie był w stanie nadać klasy podanemu obiektowi"
+            }
             document.getElementById("board").innerText = "k-nn nadał obiektowi klasę: " + resultClass
             $('html,body').animate({
                 scrollTop: $(`#board`).offset().top
@@ -207,6 +226,14 @@
         }
         catch (e) {
             alert(`Wystąpił błąd w trakcie klasyfikacji: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+
+        try {
+            oneVsRest(normalizedDatasetTrainingSamples, parameterK, metricsName, "second")
+        }
+        catch (e) {
+            alert(`Wystąpił błąd w trakcie walidacji klasyfikatora: ${e.message}`)
             throw new Error(`${e.message}`)
         }
     }
@@ -219,15 +246,14 @@
         if(parameterK > datasetTrainingSamples.length) {
             throw new Error("parametr K jest zbyt duży!")
         }
-        if(parameterK % 2 === 0) {
-            throw new Error("parametr K jest liczbą parzystą!")
-        }
 
         let assignedClass = null
         let datasetDistance = []
         let distance = []
         let sample = []
+        let sampleClasses = []
         let knnClasses = []
+        let classesCounter = []
 
         switch (metricsName) {
             case 'euklides':
@@ -247,11 +273,32 @@
         }
 
         datasetDistance.sort(sortTwoDimensionalArrayFirstColumn)
+
+        for(let i = 0; i < datasetDistance.length; i++) {
+            if(!sampleClasses.includes(datasetDistance[i][1])) {
+                sampleClasses.push(datasetDistance[i][1])
+                classesCounter.push([0, datasetDistance[i][1]])
+            }
+        }
+        console.log(sampleClasses)
         for(let i = 0; i < parameterK; i++) {
             knnClasses.push(datasetDistance[i][1])
         }
-        assignedClass = findMostFrequentItemInArray(knnClasses)
 
+        for(let i = 0; i < knnClasses.length; i++) {
+            for(let j = 0; j < classesCounter.length; j++) {
+                if(knnClasses[i] === classesCounter[j][1]) {
+                    classesCounter[j][0]++
+                }
+            }
+        }
+        classesCounter.sort(sortTwoDimensionalArrayFirstColumn)
+        if(classesCounter[classesCounter.length - 1][0] !== classesCounter[classesCounter.length - 2][0]) {
+            assignedClass = classesCounter[classesCounter.length - 1][1]
+        }
+
+
+        console.log(classesCounter)
         return assignedClass
     }
 
@@ -291,7 +338,7 @@
                 sampleClasses.push(datasetDistance[i][1])
             }
         }
-        console.log(sampleClasses)
+
         for(let iclass = 0, k = 0; iclass < sampleClasses.length; iclass++) {
             knnClasses.push([0, sampleClasses[iclass]])
             for(let idist = 0; idist < datasetDistance.length && k < parameterK; idist++) {
@@ -301,15 +348,59 @@
                 }
             }
             if(k < parameterK) {
-                throw new Error("parametr K jest zbyt duży!")
+               return null
             }
             k=0
         }
+
         knnClasses.sort(sortTwoDimensionalArrayFirstColumn)
-        console.log(knnClasses)
-        assignedClass = knnClasses[0][1]
+        if(knnClasses[0][1] !== knnClasses[1][1]) {
+            assignedClass = knnClasses[0][1]
+        }
 
         return assignedClass
+    }
+    
+    function oneVsRest(normalizedDatasetTrainingSamples, parameterK, metricsName, method) {
+        let numberOfRows = normalizedDatasetTrainingSamples.length
+        let numberOfNotNullClassification = 0
+        let numberOfCorrectClassification = 0
+
+        for(let indexTestedObject = 0; indexTestedObject < numberOfRows; indexTestedObject++) {
+            let correctClass = normalizedDatasetTrainingSamples[indexTestedObject][normalizedDatasetTrainingSamples[indexTestedObject].length - 1]
+            let knnClass = null
+            let datasetCopy = []
+            for(let i = 0; i < numberOfRows; i++) {
+                datasetCopy.push(normalizedDatasetTrainingSamples[i].slice(0))
+            }
+            let testedObjectCopy = datasetCopy.splice(indexTestedObject, 1)[0]
+            switch (method) {
+                case "first":
+                    knnClass = classifyObjectKnnFirstMethod(datasetCopy, testedObjectCopy, parameterK, metricsName)
+                    break;
+                case "second":
+                    knnClass = classifyObjectKnnSecondMethod(datasetCopy, testedObjectCopy, parameterK, metricsName)
+                    break;
+                default:
+                    throw new Error("Nieznana metoda klasyfikacji")
+            }
+            if(knnClass !== null) {
+                numberOfNotNullClassification++
+            }
+            if(knnClass === correctClass) {
+                numberOfCorrectClassification++
+            }
+        }
+        let classificationCover = parseInt((numberOfNotNullClassification / numberOfRows) * 100)
+        let classificationCorrectness = parseInt((numberOfCorrectClassification / numberOfNotNullClassification) * 100)
+
+        document.getElementById("board").innerText += `
+
+                                                          Walidacja 1vsReszta
+                                                          Liczba rekordów: ${numberOfRows}
+                                                          Pokrycie klasyfikatora: ${classificationCover}%
+                                                          Poprawność klasyfikacji: ${classificationCorrectness}%
+                                                          `
     }
 
     function metricEuclides(object1, object2) {
@@ -376,6 +467,7 @@ Flow programu:
         -po staremu(chociaż JSONa można przerobić, żeby zapisywał sam obiekt)
      */
 </script>
+
 <script src="additionalScripts.js" type="text/javascript"></script>
 <script src="zad1Scripts.js" type="text/javascript"></script>
 </body>
