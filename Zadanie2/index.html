@@ -17,9 +17,19 @@
 </header>
 <main>
     <article>
+        <div style="background-color: cornflowerblue; position: absolute; width: min-content; height: min-content; padding: 5px; z-index: 1;">
+            Lista nazw metryk:
+            <ul>
+                <li>manhattan</li>
+                <li>euklides</li>
+                <li>czebyszew</li>
+                <li>minkowski</li>
+                <li>logarytm</li>
+            </ul>
+        </div>
         <section>
 
-            <div class="upload-config">
+            <div class="upload-config" style="position: relative; z-index: 100">
                 <form id="upload-config-form">
                     <label>
                         Załaduj plik konfiguracyjny:
@@ -29,7 +39,7 @@
                 </form>
             </div>
 
-            <div class="upload-data" style="background-color: green">
+            <div class="upload-data" style="background-color: green; position: relative; z-index: 100">
                 <form id="upload-data-form">
                     <label>
                         Wybierz plik z próbkami wzorcowymi:<br>
@@ -64,6 +74,8 @@
 </main>
 
 <script>
+
+    let ParameterP = null
     
     function beginClassification1(rawTrainingSamples) {
         let normalizedDatasetTrainingSamples = []
@@ -71,6 +83,7 @@
         let parameterK = null
         let metricsName = ""
         let resultClass = ""
+        ParameterP = null
 
         try {
             if(Config.Ready === false)
@@ -154,6 +167,7 @@
         let parameterK = null
         let metricsName = ""
         let resultClass = ""
+        ParameterP = null
 
         try {
             if(Config.Ready === false)
@@ -287,16 +301,24 @@
                 }
                 break;
             case 'minkowski':
-                let parameterP
-                while((parameterP = prompt("Podaj parametr p:")) <= 0 || isNaN(parseInt(parameterP))) {
-
+                while(true) {
+                    if(ParameterP === null) {
+                        ParameterP = prompt("Podaj parametr p:")
+                        if (!isNaN(parseInt(ParameterP)) && parseInt(ParameterP) > 0) {
+                            break
+                        }
+                        ParameterP = null
+                    }
+                    else {
+                        break
+                    }
                 }
-                parameterP = parseInt(parameterP)
+                ParameterP = parseInt(ParameterP)
                 for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
                     for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
                         sample.push(datasetTrainingSamples[irow][icol])
                     }
-                    distance.push(metricMinkowski(sample, testObject, parameterP))
+                    distance.push(metricMinkowski(sample, testObject, ParameterP))
                     distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
                     datasetDistance.push(distance)
                     distance = []
@@ -397,16 +419,24 @@
                 }
                 break;
             case 'minkowski':
-                let parameterP
-                while((parameterP = prompt("Podaj parametr p:")) <= 0 || isNaN(parseInt(parameterP))) {
-
+                while(true) {
+                    if(ParameterP === null) {
+                        ParameterP = prompt("Podaj parametr p:")
+                        if (!isNaN(parseInt(ParameterP)) && parseInt(ParameterP) > 0) {
+                            break
+                        }
+                        ParameterP = null
+                    }
+                    else {
+                        break
+                    }
                 }
-                parameterP = parseInt(parameterP)
+                ParameterP = parseInt(ParameterP)
                 for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
                     for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
                         sample.push(datasetTrainingSamples[irow][icol])
                     }
-                    distance.push(metricMinkowski(sample, testObject, parameterP))
+                    distance.push(metricMinkowski(sample, testObject, ParameterP))
                     distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
                     datasetDistance.push(distance)
                     distance = []
@@ -554,52 +584,6 @@
         return sigma
     }
 
-    /*
-Flow programu:
-    I panel
-        -wybierz plik konfiguracyjny
-        -załaduj plik konfiguracyjny
-    II panel
-        -wybierz bazę próbek wzorcowych
-        -wprowadź dane do klasyfikacji
-            *podaj atrybuty obiektu do klasyfikacji(próbki testowej)
-            *podaj parametr k
-            *podaj metryke
-        -rozpocznij klasyfikacje knn(I metoda)
-        -lub rozpocznij klasyfikacje knn(II metoda)
-
-
-     Naciśnięcie przycisku klasyfikacji:
-        -pobierze surowe dane z pliku gdzie są próbki wzorcowe
-        -stworzy poprawny, znormalizowany dataset z próbkami wzorcowymi w postaci tablicy dwuwymiarowej
-        -pobierze surowe atrybuty obiektu testowego
-        -stworzy poprawny, znormalizowany obiekt testowy w postaci tablicy jednowymiarowej
-        -pobierze parametr k(dla I metody k nieparzyste)
-        -pobierze metrykę
-
-     Klasyfikacja I:
-        -funkcja weźmie obiekt(tablica), metrykę, parametrK i bazę próbek(tablica dwuwymiarowa)
-        -instrukcja switch wybierze funkcję metryki za pomocą której zostaną obliczone odległości do każdego obiektu z bazy danych
-            *odległość będzie obliczana w pętli za pomocą pojedynczej funkcji metryki zwracającej odległość
-            *wszystkie odległości do punktów oraz klasy tych punktów zostanę zapisane do oddzielnej tablicy
-        -przeprowadź klasyfikację obiektu I metodą na podstawie tablicy odległości
-
-     Klasyfikacja II:
-        -funkcja weźmie obiekt(tablica), metrykę, parametrK i bazę próbek(tablica dwuwymiarowa)
-        -instrukcja switch wybierze funkcję metryki za pomocą której zostaną obliczone odległości do każdego obiektu z bazy danych
-            *odległość będzie obliczana w pętli za pomocą pojedynczej funkcji metryki zwracającej odległość
-            *wszystkie odległości do punktów oraz klasy tych punktów zostanę zapisane do oddzielnej tablicy
-        -przeprowadź klasyfikację obiektu II metodą na podstawie tablicy odległości
-
-    Każda funkcja metryki:
-        -musi przyjmować dwa obiekty i zwracać odpowiednią odległość ze wzoru
-
-    Board:
-        -wyświetl sklasyfikowany obiekt
-
-    Dolny panel:
-        -po staremu
-     */
 </script>
 
 <script src="additionalScripts.js" type="text/javascript"></script>

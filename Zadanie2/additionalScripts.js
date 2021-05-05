@@ -15,17 +15,17 @@ $('#classification2-btn').on('click',function () {
 
 $('#save-txt-btn').on('click',function () {
     let dataset = document.getElementById("board").innerText;
-    downloadToFile(dataset, 'dataset.txt', 'text/plain')
+    downloadToFile(dataset, 'wyniki.txt', 'text/plain')
 })
 
 $('#save-html-btn').on('click',function () {
     let dataset = document.getElementById("board").innerHTML;
-    downloadToFile(dataset, 'dataset.html', 'text/plain')
+    downloadToFile(dataset, 'wyniki.html', 'text/plain')
 })
 
 $('#save-json-btn').on('click',function () {
     let dataset = JSON.stringify(MainDataSet)
-    downloadToFile(dataset, 'dataset.json', 'text/plain')
+    downloadToFile(dataset, 'wyniki.json', 'text/plain')
 })
 
 $('#back-btn').on("click",function(){
