@@ -17,9 +17,19 @@
 </header>
 <main>
     <article>
+        <div style="background-color: cornflowerblue; position: absolute; width: min-content; height: min-content; padding: 5px; z-index: 1;">
+            Lista nazw metryk:
+            <ul>
+                <li>manhattan</li>
+                <li>euklides</li>
+                <li>czebyszew</li>
+                <li>minkowski</li>
+                <li>logarytm</li>
+            </ul>
+        </div>
         <section>
 
-            <div class="upload-config">
+            <div class="upload-config" style="position: relative; z-index: 100">
                 <form id="upload-config-form">
                     <label>
                         Załaduj plik konfiguracyjny:
@@ -29,7 +39,7 @@
                 </form>
             </div>
 
-            <div class="upload-data" style="background-color: green">
+            <div class="upload-data" style="background-color: green; position: relative; z-index: 100">
                 <form id="upload-data-form">
                     <label>
                         Wybierz plik z próbkami wzorcowymi:<br>
@@ -64,6 +74,8 @@
 </main>
 
 <script>
+
+    let ParameterP = null
     
     function beginClassification1(rawTrainingSamples) {
         let normalizedDatasetTrainingSamples = []
@@ -71,6 +83,7 @@
         let parameterK = null
         let metricsName = ""
         let resultClass = ""
+        ParameterP = null
 
         try {
             if(Config.Ready === false)
@@ -154,6 +167,7 @@
         let parameterK = null
         let metricsName = ""
         let resultClass = ""
+        ParameterP = null
 
         try {
             if(Config.Ready === false)
@@ -287,16 +301,24 @@
                 }
                 break;
             case 'minkowski':
-                let parameterP
-                while((parameterP = prompt("Podaj parametr p:")) <= 0 || isNaN(parseInt(parameterP))) {
-
+                while(true) {
+                    if(ParameterP === null) {
+                        ParameterP = prompt("Podaj parametr p:")
+                        if (!isNaN(parseInt(ParameterP)) && parseInt(ParameterP) > 0) {
+                            break
+                        }
+                        ParameterP = null
+                    }
+                    else {
+                        break
+                    }
                 }
-                parameterP = parseInt(parameterP)
+                ParameterP = parseInt(ParameterP)
                 for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
                     for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
                         sample.push(datasetTrainingSamples[irow][icol])
                     }
-                    distance.push(metricMinkowski(sample, testObject, parameterP))
+                    distance.push(metricMinkowski(sample, testObject, ParameterP))
                     distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
                     datasetDistance.push(distance)
                     distance = []
@@ -397,16 +419,24 @@
                 }
                 break;
             case 'minkowski':
-                let parameterP
-                while((parameterP = prompt("Podaj parametr p:")) <= 0 || isNaN(parseInt(parameterP))) {
-
+                while(true) {
+                    if(ParameterP === null) {
+                        ParameterP = prompt("Podaj parametr p:")
+                        if (!isNaN(parseInt(ParameterP)) && parseInt(ParameterP) > 0) {
+                            break
+                        }
+                        ParameterP = null
+                    }
+                    else {
+                        break
+                    }
                 }
-                parameterP = parseInt(parameterP)
+                ParameterP = parseInt(ParameterP)
                 for(let irow = 0; irow < datasetTrainingSamples.length; irow++) {
                     for(let icol = 0; icol < datasetTrainingSamples[irow].length - 1; icol++) {
                         sample.push(datasetTrainingSamples[irow][icol])
                     }
-                    distance.push(metricMinkowski(sample, testObject, parameterP))
+                    distance.push(metricMinkowski(sample, testObject, ParameterP))
                     distance.push(datasetTrainingSamples[irow][datasetTrainingSamples[irow].length - 1])
                     datasetDistance.push(distance)
                     distance = []
