@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Zadanie 3</title>
+
+  <link rel="stylesheet" href="css/main.css" type="text/css">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="title">Zadanie 3</div>
+</header>
+<main>
+    <article>
+
+        <section>
+            <div class="upload-data" style="width: 40vw">
+                <form id="structure-form">
+                    <b>1. struktura i wagi</b><br>
+                    <label>
+                        Załaduj plik:<br>
+                    </label>
+                    <input id="numbers-file" type="file" name="numbersFile"><br>
+                    <h1>lub</h1>
+                    <label>
+                        Podaj strukturę:<br>
+                    </label>
+                    <input id="structure-input" type="text" style="cursor: text; width: 80%; margin: 5px"><br>
+                    <label>
+                        Podaj zakres:<br>
+                    </label>
+                    <input id="min-input" type="text" placeholder="min" style="cursor: text; width: 40%; margin: 5px">
+                    <input id="max-input" type="text" placeholder="max" style="cursor: text; width: 40%; margin: 5px"><br>
+                    <label>
+                        Podaj ilość miejsc po przecinku:<br>
+                    </label>
+                    <input id="decimalPlaces-input" type="text" placeholder="" style="cursor: text; width: 40%; margin: 5px"><br>
+                    <input id="structure-form-generate" type="button" value="Generuj wagi">
+                </form>
+            </div>
+        </section>
+
+        <section>
+            <div class="board" id="board">
+                Tu będzie się działo
+            </div>
+        </section>
+
+        <div class="bottom-panel" id="bottom-panel">
+            <div class="back-btn" id="back-btn">
+               <button>Wróć</button>
+            </div>
+            <div class="save-btn" id="save-txt-btn">
+                <button>Zapisz do pliku</button>
+            </div>
+        </div>
+    </article>
+</main>
+
+<script>
+    /*
+        TO DO LIST(frontend):
+        -interfejst dla generowania, zapisu i odczytu wag/struktury
+        -interfejs do zadawania pytań??????????
+        -interfejs do wczytywania i losowania próbek uczących
+        -wybór stopu uczenia przez propagację steczną(2 sposoby)
+        -zapis zmodyfikowanych przez propagację wag do pliku
+
+        TO DO LIST(backend):
+        -stworzyć obiekty dla neuronu, warstwy i sieci
+        -stworzyć funkcjonalności do interfejsów
+     */
+
+    function generateNumbersFromStructure(structureString, minNumber, maxNumber, decimalPlaces) {
+        try {
+
+            if(structureString.length <= 0 || minNumber.length <= 0 || maxNumber.length <= 0 || decimalPlaces.length <= 0) {
+                throw new Error("Wypełnij wszystkie pola!")
+            }
+            if(isAttributeFloat(minNumber) && isAttributeFloat(maxNumber)) {
+                minNumber = parseFloat(minNumber)
+                maxNumber = parseFloat(maxNumber)
+            }
+            else {
+                throw new Error("Zakres musi być podany w liczbach")
+            }
+            if(isAttributeInt(decimalPlaces)) {
+                decimalPlaces = parseInt(decimalPlaces)
+            }
+            else {
+                throw new Error("Ilość miejsc po przecinku musi być podana w liczbie całkowitej")
+            }
+
+            let structureArray = []
+            let number = ""
+            for(let i = 0; i < structureString.length; i++) {
+                if(isAttributeInt(structureString.charAt(i))){
+                    number += structureString.charAt(i)
+                }
+                else if(structureString.charAt(i) === '-'){
+                    structureArray.push(parseInt(number))
+                    number = ""
+                }
+                else {
+                    throw new Error(`${i+1} znak w zapisie struktury jest niezgodny z ustaloną konwencją`)
+                }
+
+                if(i+1 >= structureString.length && number.length > 0) {
+                    structureArray.push(parseInt(number))
+                }
+            }
+
+            let randomNumbersAmount = 0
+            for(let i = 0; i < structureArray.length - 1; i++) {
+                randomNumbersAmount += (structureArray[i] * structureArray[i+1]) +  structureArray[i+1]
+            }
+
+            let randomNumbersArray = []
+            let roundNumber = 3
+            for(let i = 0; i < randomNumbersAmount; i++) {
+                let tempNumber = (Math.random() * (maxNumber - minNumber) + minNumber).toFixed(decimalPlaces)
+                randomNumbersArray.push(Number.parseFloat(tempNumber))
+            }
+
+            let textToDisplay = structureString + '\n'
+            for(let i = 0; i < randomNumbersArray.length; i++) {
+                textToDisplay += randomNumbersArray[i] + " "
+            }
+            displayText(textToDisplay)
+
+        }
+        catch (e) {
+            alert(`Błąd: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+    }
+
+    $('#back-btn').on("click",function(){
+        $('html,body').animate({
+            scrollTop: 0
+        }, 'slow');
+    });
+
+    $('#save-txt-btn').on('click',function () {
+        let dataset = document.getElementById("board").innerText;
+        let fileName = prompt("Podaj nazwę pliku: ")
+        downloadToFile(dataset, fileName, 'text/plain')
+    })
+
+    $('#structure-form-generate').on('click', function () {
+        let structureString = document.getElementById("structure-input").value;
+        let minNumber = document.getElementById("min-input").value;
+        let maxNumber = document.getElementById("max-input").value;
+        let decimalPlaces = document.getElementById("decimalPlaces-input").value;
+
+        generateNumbersFromStructure(structureString, minNumber, maxNumber, decimalPlaces)
+    })
+
+    $('#numbers-file').on('change', function () {
+        readNumbersFromFile(document.getElementById('numbers-file'))
+
+        $('html,body').animate({
+            scrollTop: $(`#board`).offset().top
+        }, 'slow');
+    })
+
+    function displayText(text) {
+        document.getElementById('board').innerText = text
+
+        $('html,body').animate({
+            scrollTop: $(`#board`).offset().top
+        }, 'slow');
+    }
+
+    function isAttributeInt(attribute) {
+        return (!isNaN(attribute) && !isNaN(parseInt(attribute)) && Number.isInteger(parseFloat(attribute)))
+    }
+
+    function isAttributeFloat(attribute) {
+        return (!isNaN(attribute) && !isNaN(parseFloat(attribute)))
+    }
+
+    const downloadToFile = (content, filename, contentType) => {
+        const a = document.createElement('a');
+        const file = new Blob([content], {type: contentType});
+
+        a.href= URL.createObjectURL(file);
+        a.download = filename;
+        a.click();
+
+        URL.revokeObjectURL(a.href);
+    };
+
+    function readNumbersFromFile(filePath) {
+        try {
+            if (checkFileAPI() === false)
+                return false
+            let reader = new FileReader()
+            let output = ""
+            if (filePath.files && filePath.files[0]) {
+                reader.onload = function (e) {
+                    output = e.target.result;
+                    document.getElementById('board').innerText = output;
+                };//end onload()
+                reader.readAsText(filePath.files[0]);
+            }//end if html5 filelist support
+            else if (ActiveXObject && filePath) { //fallback to IE 6-8 support via ActiveX
+                try {
+                    reader = new ActiveXObject("Scripting.FileSystemObject");
+                    let file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
+                    output = file.ReadAll(); //text contents of file
+                    file.Close(); //close file "input stream"
+                    document.getElementById('board').innerText = output;
+                } catch (e) {
+                    if (e.number == -2146827859) {
+                        alert('Unable to access local files due to browser security settings. ' +
+                            'To overcome this, go to Tools->Internet Options->Security->Custom Level. ' +
+                            'Find the setting for "Initialize and script ActiveX controls not marked as safe" and change it to "Enable" or "Prompt"');
+                    }
+                }
+            } else { //this is where you could fallback to Java Applet, Flash or similar
+                return false;
+            }
+        }
+        catch (e) {
+            alert(`Błąd: Nie można załadować pliku z danymi!`)
+            throw new Error(`${e.message}`)
+        }
+        return true;
+    }
+
+    function checkFileAPI() {
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            return true;
+        } else {
+            alert('The File APIs are not fully supported by your browser. Fallback required.');
+            return false;
+        }
+    }
+
+</script>
+
+</body>
+</html>
