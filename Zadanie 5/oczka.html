@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zadanie 5</title>
+
+    <link rel="stylesheet" href="css/main.css" type="text/css">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+<header>
+    <div class="title">Zadanie 5</div>
+</header>
+<main>
+    <article>
+        <section>
+            <div class="upload-data">
+                <input id="generate-btn" type="button" value="Generuj skrypt"></button>
+            </div>
+        </section>
+        <section>
+            <div class="board" id="board">
+                Pusto
+            </div>
+        </section>
+        <div class="bottom-panel" id="bottom-panel">
+            <div class="back-btn" id="back-btn">
+                <button>Wróć</button>
+            </div>
+        </div>
+    </article>
+</main>
+
+<script>
+
+    $('#generate-btn').on("click",function(){
+        let gameGraph = new GameGraph([4, 5, 6], 21)
+        document.getElementById("board").innerText = gameGraph.generateScript()
+    });
+
+    function GameGraph(tokenValues, maxSum) {
+        this.tokenValues = tokenValues
+        this.maxSum = maxSum
+        this.links = []
+        this.generateScript = function () {
+            return "script"
+        }
+    }
+    
+    function Link(nodes, color, decisionValue) {
+        this.nodes = nodes
+        this.color = color
+        this.decisionValue = decisionValue
+        this.generateScript = function () {
+            return "script"
+        }
+    }
+    
+    function Node(player, sum) {
+        this.player = player
+        this.sum = sum
+        this.generateScript = function () {
+            return `script`
+        }
+    }
+
+</script>
+
+<script src="additionalScripts.js" type="text/javascript"></script>
+</body>
+</html>
