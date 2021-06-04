@@ -30,8 +30,20 @@ body {
     border-radius: 1px;
 }
 
-.upload-data input, textarea {
+#max-sum, #token-values {
+    width: 50%;
     margin: 0;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+#token-values {
+    width: 70%;
+}
+
+#generate-normal-btn, #generate-minmax-btn {
+    width: min-content;
+    margin: 5px;
     font-size: 26px;
     font-weight: bold;
     cursor: pointer;
@@ -53,14 +65,31 @@ body {
     display: flex;
 }
 
-.back-btn {
-    width: min-content;
-    margin: 0 auto 0 5px;
+.bottom-panel a{
+    margin: 0 10px 0 auto;
+    padding: 0 5px;
+    color: black;
+    background-color: cornflowerblue;
+    text-decoration: none;
+    display: block;
 }
 
-.back-btn button {
+.bottom-panel a:hover{
+    color: red;
+}
+
+.bottom-btn {
+    width: min-content;
+    margin: 0 0 0 10px;
+}
+
+.bottom-btn button {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
     padding: 0 25px;
+}
+
+#copy-btn {
+    margin: 0 10px 0 auto;
 }

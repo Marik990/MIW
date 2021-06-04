@@ -13,14 +13,22 @@
 </head>
 <body>
 <header>
-    <div class="title"></div>
+    <div class="title">Zadanie 5 - Graf Gry + algorytm MinMax</div>
 </header>
 <main>
     <article>
         <section>
             <div class="upload-data">
                 <form>
-                    <input id="generate-normal-btn" type="button" value="Generuj normalny skrypt">
+                    <label>
+                        Podaj wartości żetonów:<br>
+                    </label>
+                    <input id="token-values" type="text"><br>
+                    <label>
+                        Podaj maksymalną sumę żetonów:<br>
+                    </label>
+                    <input id="max-sum" type="text"><br>
+                    <input id="generate-normal-btn" type="button" value="Generuj normalny skrypt" style="margin-top: 20px">
                     <input id="generate-minmax-btn" type="button" value="Generuj skrypt MinMax">
                 </form>
             </div>
@@ -31,24 +39,97 @@
             </div>
         </section>
         <div class="bottom-panel" id="bottom-panel">
-            <div class="back-btn" id="back-btn">
-                <button></button>
+            <div class="bottom-btn" id="back-btn">
+                <button>Wróć</button>
             </div>
+            <div class="bottom-btn" id="copy-btn">
+                <button>Skopiuj</button>
+            </div>
+            <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank" style="margin-left: 10px">GraphvizOnline</a>
+            <a href="https://edotor.net" target="_blank" style="margin-left: 10px">edotor.net</a>
         </div>
     </article>
 </main>
 
 <script>
 
-
+    $('#copy-btn').on("click",function(){
+        try{
+            //navigator.clipboard.writeText(document.getElementById("board").innerText)
+            const el = document.createElement('textarea');
+            el.value = document.getElementById("board").innerText
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Skrypt został skopiowany pomyślnie!")
+        }
+        catch (e) {
+            alert(`Wystąpił błąd: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
+    });
 
     $('#generate-normal-btn').on("click",function(){
-        let gameGraph = new GameGraph([2, 3], 8)
-        document.getElementById("board").innerText = gameGraph.generateNormalScript()
+        try{
+            let tokenValues = document.getElementById("token-values").value.split`,`.map(x=>+x)
+            let maxSum = document.getElementById("max-sum").value
+            if(tokenValues.length <= 0 || maxSum.length <= 0) {
+                throw new Error("Wszystkie pola muszą zostać wypełnione.")
+            }
+            tokenValues.forEach(function (token) {
+                if(!isAttributeInt(token) || token <= 0) {
+                    throw new Error("Wartości żetonów zostały podane w nieprawidłowy sposób. Program oczekuje liczb całkowitych większych od zera, oddzielonych przecinkiem.")
+                }
+            })
+            if(isAttributeInt(maxSum) && maxSum > 0) {
+                maxSum = parseInt(maxSum)
+            }
+            else {
+                throw new Error("Maksymalna suma musi być liczbą całkowitą większą od zera.")
+            }
+
+            let gameGraph = new GameGraph(tokenValues, maxSum)
+            document.getElementById("board").innerText = gameGraph.generateNormalScript()
+            $('html,body').animate({
+                scrollTop: $(`#board`).offset().top
+            }, 'slow');
+        }
+        catch (e) {
+            alert(`Wystąpił błąd: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
     });
+
     $('#generate-minmax-btn').on("click",function(){
-        let gameGraph = new GameGraph([4, 5, 6], 21)
-        document.getElementById("board").innerText = gameGraph.generateMinMaxScript()
+        try{
+            let tokenValues = document.getElementById("token-values").value.split`,`.map(x=>+x)
+            let maxSum = document.getElementById("max-sum").value
+            if(tokenValues.length <= 0 || maxSum.length <= 0) {
+                throw new Error("Wszystkie pola muszą zostać wypełnione.")
+            }
+            tokenValues.forEach(function (token) {
+                if(!isAttributeInt(token) || token <= 0) {
+                    throw new Error("Wartości żetonów zostały podane w nieprawidłowy sposób. Program oczekuje liczb całkowitych większych od zera, oddzielonych przecinkiem.")
+                }
+            })
+            if(isAttributeInt(maxSum) && maxSum > 0) {
+                maxSum = parseInt(maxSum)
+            }
+            else {
+                throw new Error("Maksymalna suma musi być liczbą całkowitą większą od zera.")
+            }
+
+            let gameGraph = new GameGraph(tokenValues, maxSum)
+            document.getElementById("board").innerText = gameGraph.generateMinMaxScript()
+            $('html,body').animate({
+                scrollTop: $(`#board`).offset().top
+            }, 'slow');
+        }
+        catch (e) {
+            alert(`Wystąpił błąd: ${e.message}`)
+            throw new Error(`${e.message}`)
+        }
     });
 
     function GameGraph(tokenValues, maxSum) {
@@ -61,7 +142,7 @@
             let idNode = 0
             let iParent = 0
             let player = "prot"
-            this.nodes.push(new Node(idNode++, player, 0))
+            this.nodes.push(new Node(idNode++, player, 0, this.maxSum, false))
             while(iParent < this.nodes.length) {
                 if(this.nodes[iParent].player === "prot"){
                     player = "ant"
@@ -71,7 +152,7 @@
                 }
                 for(let iToken = 0; iToken < tokenValues.length; iToken++){
                     if (this.nodes[iParent].sum < this.maxSum) {
-                        this.nodes.push(new Node(idNode++, player, this.nodes[iParent].sum + this.tokenValues[iToken], this.maxSum))
+                        this.nodes.push(new Node(idNode++, player, this.nodes[iParent].sum + this.tokenValues[iToken], this.maxSum, false))
                         this.links.push(new Link([this.nodes[iParent], this.nodes[idNode - 1]], this.tokenValues[iToken], "black"))
                     }
                 }
@@ -82,7 +163,7 @@
             let idNode = 0
             let iParent = 0
             let player = "prot"
-            this.nodes.push(new Node(idNode++, player, 0))
+            this.nodes.push(new Node(idNode++, player, 0, this.maxSum, true))
             while(iParent < this.nodes.length) {
                 if(this.nodes[iParent].player === "prot"){
                     player = "ant"
@@ -92,7 +173,7 @@
                 }
                 for(let iToken = 0; iToken < tokenValues.length; iToken++){
                     if (this.nodes[iParent].sum < this.maxSum) {
-                        this.nodes.push(new Node(idNode++, player, this.nodes[iParent].sum + this.tokenValues[iToken], this.maxSum))
+                        this.nodes.push(new Node(idNode++, player, this.nodes[iParent].sum + this.tokenValues[iToken], this.maxSum, true))
                         this.links.push(new Link([this.nodes[iParent], this.nodes[idNode - 1]], this.tokenValues[iToken], "black"))
                     }
                 }
@@ -167,12 +248,14 @@
         }
     }
     
-    function Node(id, player, sum, maxSum) {
+    function Node(id, player, sum, maxSum, displayMinMax) {
         this.id = id
         this.player = player
         this.name = this.player + this.id
         this.sum = sum
         this.minMaxValue = null
+        this.displayMinMax = displayMinMax
+        this.script = ""
         if(this.sum > maxSum){
             if(this.player === "prot"){
                 this.minMaxValue = 3
@@ -187,19 +270,28 @@
         this.generateScript = function () {
             if(this.sum > maxSum){
                 if(this.player === "prot"){
-                    return `"${this.name}" [label = "koniec;\\n wygrana \\n MinMax = ${this.minMaxValue}"]`
+                    this.script += `"${this.name}" [label = "koniec;\\n wygrana`
                 }
                 else{
-                    return `"${this.name}" [label = "koniec;\\n przegrana \\n MinMax = ${this.minMaxValue}"]`
+                    this.script += `"${this.name}" [label = "koniec;\\n przegrana`
                 }
             }
             else if(this.sum === maxSum){
-                return `"${this.name}" [label = "koniec;\\n remis \\n MinMax = ${this.minMaxValue}"]`
+                this.script += `"${this.name}" [label = "koniec;\\n remis`
             }
             else{
-                return `"${this.name}" [label = "${this.player};\\n suma=${this.sum} \\n MinMax = ${this.minMaxValue}"]`
+                this.script += `"${this.name}" [label = "${this.player};\\n suma=${this.sum}`
             }
+
+            if(displayMinMax === true) {
+                this.script += `; \\n MinMax = ${this.minMaxValue}`
+            }
+            return this.script + `"]`
         }
+    }
+
+    function isAttributeInt(attribute) {
+        return (!isNaN(attribute) && !isNaN(parseInt(attribute)) && Number.isInteger(parseFloat(attribute)))
     }
 
 </script>
