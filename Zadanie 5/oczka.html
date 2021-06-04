@@ -40,12 +40,14 @@
 
 <script>
 
+
+
     $('#generate-normal-btn').on("click",function(){
         let gameGraph = new GameGraph([2, 3], 8)
         document.getElementById("board").innerText = gameGraph.generateNormalScript()
     });
     $('#generate-minmax-btn').on("click",function(){
-        let gameGraph = new GameGraph([2, 3], 8)
+        let gameGraph = new GameGraph([4, 5, 6], 21)
         document.getElementById("board").innerText = gameGraph.generateMinMaxScript()
     });
 
@@ -171,23 +173,31 @@
         this.name = this.player + this.id
         this.sum = sum
         this.minMaxValue = null
+        if(this.sum > maxSum){
+            if(this.player === "prot"){
+                this.minMaxValue = 3
+            }
+            else{
+                this.minMaxValue = 1
+            }
+        }
+        else if(this.sum === maxSum){
+            this.minMaxValue = 2
+        }
         this.generateScript = function () {
             if(this.sum > maxSum){
                 if(this.player === "prot"){
-                    this.minMaxValue = 3
-                    return `"${this.name}" [label = "koniec;\\n wygrana"]`
+                    return `"${this.name}" [label = "koniec;\\n wygrana \\n MinMax = ${this.minMaxValue}"]`
                 }
                 else{
-                    this.minMaxValue = 1
-                    return `"${this.name}" [label = "koniec;\\n przegrana"]`
+                    return `"${this.name}" [label = "koniec;\\n przegrana \\n MinMax = ${this.minMaxValue}"]`
                 }
             }
             else if(this.sum === maxSum){
-                this.minMaxValue = 2
-                return `"${this.name}" [label = "koniec;\\n remis"]`
+                return `"${this.name}" [label = "koniec;\\n remis \\n MinMax = ${this.minMaxValue}"]`
             }
             else{
-                return `"${this.name}" [label = "${this.player};\\n suma=${this.sum}"]`
+                return `"${this.name}" [label = "${this.player};\\n suma=${this.sum} \\n MinMax = ${this.minMaxValue}"]`
             }
         }
     }
