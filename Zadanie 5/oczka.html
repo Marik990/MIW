@@ -13,13 +13,16 @@
 </head>
 <body>
 <header>
-    <div class="title">Zadanie 5</div>
+    <div class="title"></div>
 </header>
 <main>
     <article>
         <section>
             <div class="upload-data">
-                <input id="generate-btn" type="button" value="Generuj skrypt"></button>
+                <form>
+                    <input id="generate-normal-btn" type="button" value="Generuj normalny skrypt">
+                    <input id="generate-minmax-btn" type="button" value="Generuj skrypt MinMax">
+                </form>
             </div>
         </section>
         <section>
@@ -29,7 +32,7 @@
         </section>
         <div class="bottom-panel" id="bottom-panel">
             <div class="back-btn" id="back-btn">
-                <button>Wróć</button>
+                <button></button>
             </div>
         </div>
     </article>
@@ -37,40 +40,117 @@
 
 <script>
 
-    $('#generate-btn').on("click",function(){
-        let gameGraph = new GameGraph([4, 5, 6], 21)
+    $('#generate-normal-btn').on("click",function(){
+        let gameGraph = new GameGraph([2, 3], 8)
         document.getElementById("board").innerText = gameGraph.generateNormalScript()
+    });
+    $('#generate-minmax-btn').on("click",function(){
+        let gameGraph = new GameGraph([2, 3], 8)
+        document.getElementById("board").innerText = gameGraph.generateMinMaxScript()
     });
 
     function GameGraph(tokenValues, maxSum) {
-        this.tokenValues = tokenValues
+        this.tokenValues = tokenValues.sort((a,b) => a-b)
         this.maxSum = maxSum
         this.nodes = []
         this.links = []
-        this.constructNormalGraph = function () {
-            this.nodes.push(new Node(0, "prot", 0))
-            this.tokenValues.forEach(function (tokenValue) {
 
-            })
-            this.links.push(new Link())
+        this.constructNormalGraph = function () {
+            let idNode = 0
+            let iParent = 0
+            let player = "prot"
+            this.nodes.push(new Node(idNode++, player, 0))
+            while(iParent < this.nodes.length) {
+                if(this.nodes[iParent].player === "prot"){
+                    player = "ant"
+                }
+                else {
+                    player = "prot"
+                }
+                for(let iToken = 0; iToken < tokenValues.length; iToken++){
+                    if (this.nodes[iParent].sum < this.maxSum) {
+                        this.nodes.push(new Node(idNode++, player, this.nodes[iParent].sum + this.tokenValues[iToken], this.maxSum))
+                        this.links.push(new Link([this.nodes[iParent], this.nodes[idNode - 1]], this.tokenValues[iToken], "black"))
+                    }
+                }
+                iParent++
+            }
         }
         this.constructMinMaxGraph = function () {
+            let idNode = 0
+            let iParent = 0
+            let player = "prot"
+            this.nodes.push(new Node(idNode++, player, 0))
+            while(iParent < this.nodes.length) {
+                if(this.nodes[iParent].player === "prot"){
+                    player = "ant"
+                }
+                else {
+                    player = "prot"
+                }
+                for(let iToken = 0; iToken < tokenValues.length; iToken++){
+                    if (this.nodes[iParent].sum < this.maxSum) {
+                        this.nodes.push(new Node(idNode++, player, this.nodes[iParent].sum + this.tokenValues[iToken], this.maxSum))
+                        this.links.push(new Link([this.nodes[iParent], this.nodes[idNode - 1]], this.tokenValues[iToken], "black"))
+                    }
+                }
+                iParent++
+            }
 
+            let iLink = this.links.length - 1
+            while(iLink >= 0) {
+                let iLastColoredLink = null
+                for(let i = this.tokenValues.length - 1; i >= 0; i--, iLink--) {
+                    if(this.links[iLink].nodes[0].minMaxValue === null) {
+                        this.links[iLink].nodes[0].minMaxValue = this.links[iLink].nodes[1].minMaxValue
+                        this.links[iLink].color = "red"
+                        iLastColoredLink = iLink
+                    }
+                    else if(this.links[iLink].nodes[0].player === "prot") {
+                        if(this.links[iLink].nodes[0].minMaxValue <= this.links[iLink].nodes[1].minMaxValue) {
+                            if(iLastColoredLink !== null) {
+                                this.links[iLastColoredLink].color = "black"
+                            }
+                            this.links[iLink].nodes[0].minMaxValue = this.links[iLink].nodes[1].minMaxValue
+                            this.links[iLink].color = "red"
+                            iLastColoredLink = iLink
+                        }
+                    }
+                    else {
+                        if(this.links[iLink].nodes[0].minMaxValue >= this.links[iLink].nodes[1].minMaxValue) {
+                            if(iLastColoredLink !== null) {
+                                this.links[iLastColoredLink].color = "black"
+                            }
+                            this.links[iLink].nodes[0].minMaxValue = this.links[iLink].nodes[1].minMaxValue
+                            this.links[iLink].color = "red"
+                            iLastColoredLink = iLink
+                        }
+                    }
+                }
+            }
         }
+
         this.generateNormalScript = function () {
+            this.constructNormalGraph()
             let script = "digraph G {\n"
             this.nodes.forEach(function (node) {
-                script += node.generateScript()
+                script += node.generateScript() + "\n"
             })
             this.links.forEach(function (link) {
-                script += link.generateScript()
+                script += link.generateScript() + "\n"
             })
             script += "}"
             return script
         }
         this.generateMinMaxScript = function () {
-            let script = "digraph G {"
-
+            this.constructMinMaxGraph()
+            let script = "digraph G {\n"
+            this.nodes.forEach(function (node) {
+                script += node.generateScript() + "\n"
+            })
+            this.links.forEach(function (link) {
+                script += link.generateScript() + "\n"
+            })
             script += "}"
             return script
         }
@@ -85,21 +165,25 @@
         }
     }
     
-    function Node(id, player, sum) {
+    function Node(id, player, sum, maxSum) {
         this.id = id
         this.player = player
         this.name = this.player + this.id
         this.sum = sum
+        this.minMaxValue = null
         this.generateScript = function () {
-            if(this.sum > 21){
+            if(this.sum > maxSum){
                 if(this.player === "prot"){
+                    this.minMaxValue = 3
                     return `"${this.name}" [label = "koniec;\\n wygrana"]`
                 }
                 else{
+                    this.minMaxValue = 1
                     return `"${this.name}" [label = "koniec;\\n przegrana"]`
                 }
             }
-            else if(this.sum === 21){
+            else if(this.sum === maxSum){
+                this.minMaxValue = 2
                 return `"${this.name}" [label = "koniec;\\n remis"]`
             }
             else{

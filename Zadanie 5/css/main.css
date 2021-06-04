@@ -21,8 +21,8 @@ body {
 }
 
 .upload-data {
-    width: min-content;
-    padding: 10px 10px;
+    width: 50vw;
+    padding: 10px 0;
     margin: 10px auto;
     text-align: center;
     background-color: darkred;
@@ -31,6 +31,7 @@ body {
 }
 
 .upload-data input, textarea {
+    margin: 0;
     font-size: 26px;
     font-weight: bold;
     cursor: pointer;
@@ -62,29 +63,4 @@ body {
     font-weight: bold;
     cursor: pointer;
     padding: 0 25px;
-}
-
-.save-btn {
-    width: max-content;
-    margin: 0 5px;
-}
-
-.save-btn button {
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0 25px;
-}
-
-th, td {
-    border: 1px solid black;
-    margin: 0;
-}
-
-.table-head th {
-    border-bottom: 3px solid black;
-}
-
-table {
-    border: 3px solid black;
 }
